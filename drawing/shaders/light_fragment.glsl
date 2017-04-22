@@ -92,16 +92,19 @@ void main()
             sum += sample(vec2(tc.x - (NUM_VALUES-i)*blur, tc.y), r) * values[i];
             sum += sample(vec2(tc.x - (i+1)*blur, tc.y), r) * values[NUM_VALUES-1-i];
         }
+        sum = 1.0;
 
         //adjust_xy.y *= 1.41;
         //todo: use a height map to get the z coord
         vec3 light_dir = normalize(light_pos-current_pos);
         vec3 diffuse = light_colour*max(dot(light_dir,normal),0.0);
         float distance = min(length(adjust_xy)/light_radius,1);
+        //vec3 intensity = diffuse*(1-distance*distance)*(1-ambient_attenuation)*(1-falloff);
         vec3 intensity = diffuse*(1-distance*distance)*(1-ambient_attenuation)*(1-falloff);
         //out_colour = mix(vec4(0,0,0,1),colour,value);
         out_colour = vec4(colour.rgb*intensity*sum,1);
         //out_colour.a *= centre;
+        //out_colour = colour;
     }
     else if(3 == light_type){
         vec3 world_light_pos = vec3( (light_pos.x+translation.x)*scale.x,

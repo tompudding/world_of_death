@@ -170,7 +170,7 @@ class Light(object):
     @property
     def screen_pos(self):
         p = self.pos
-        return ((p[0] - globals.game_view.viewpos._pos.x)*globals.scale.x,(p[1]-globals.game_view.viewpos._pos.y)*globals.scale.y,self.z)
+        return ((p[0] - globals.game_view.viewpos.pos.x)*globals.scale.x,(p[1]-globals.game_view.viewpos.pos.y)*globals.scale.y,self.z)
 
 class NonShadowLight(Light):
     def append_to_list(self):

@@ -376,20 +376,22 @@ def EndFrameGameMode():
     glUniform1f(light_shader.locations.light_radius, 400)
     glUniform1f(light_shader.locations.light_intensity, 1)
 
-    #quad_buffer = globals.temp_mouse_light
+
+    quad_buffer = globals.temp_mouse_light
 
     #Hack, do the mouse light separate for now so we can set it's position. Should be done elsewhere really and be in
     #the lights list
-    # glUniform1i(light_shader.locations.light_type, 2)
-    # glUniform1i(light_shader.locations.shadow_index, 0)
-    # glUniform3f(light_shader.locations.light_pos, globals.mouse_screen.x, globals.mouse_screen.y,20)
-    # glUniform3f(light_shader.locations.light_colour, 1,1,1)
-    # glUniform1f(light_shader.locations.cone_dir, 0)
-    # glUniform1f(light_shader.locations.cone_width, 70)
-    # glVertexAttribPointer( light_shader.locations.vertex_data, 3, GL_FLOAT, GL_FALSE, 0, quad_buffer.vertex_data )
-    # globals.mouse_light_quad.SetVertices(globals.mouse_screen - Point(400,400),
-    #                                      globals.mouse_screen + Point(400,400),0.1)
-    # glDrawElements(GL_QUADS,quad_buffer.current_size,GL_UNSIGNED_INT,quad_buffer.indices)
+    Scale(globals.scale.x,globals.scale.y,1)
+    glUniform1i(light_shader.locations.light_type, 2)
+    glUniform1i(light_shader.locations.shadow_index, 0)
+    glUniform3f(light_shader.locations.light_pos, globals.mouse_screen.x, globals.mouse_screen.y,20)
+    glUniform3f(light_shader.locations.light_colour, 1,1,1)
+    glUniform1f(light_shader.locations.cone_dir, 0)
+    glUniform1f(light_shader.locations.cone_width, 7)
+    glVertexAttribPointer( light_shader.locations.vertex_data, 3, GL_FLOAT, GL_FALSE, 0, quad_buffer.vertex_data )
+    globals.mouse_light_quad.SetVertices(globals.mouse_world - Point(400,400),
+                                         globals.mouse_world + Point(400,400),0.1)
+    glDrawElements(GL_QUADS,quad_buffer.current_size,GL_UNSIGNED_INT,quad_buffer.indices)
 
 
     #Need to draw some lights...
@@ -425,10 +427,12 @@ def EndFrameGameMode():
     for light in globals.lights:
         if not light.on:
             continue
+        print 'Doing light',light.screen_pos,light.radius,light.colour,light.quad.vertex[:4],ambient_attenuation
         glUniform1i(light_shader.locations.shadow_index, light.shadow_index)
         glUniform3f(light_shader.locations.light_pos, *light.screen_pos)
         glUniform3f(light_shader.locations.light_colour, *light.colour)
         glUniform1f(light_shader.locations.light_radius, light.radius)
+        glUniform1f(light_shader.locations.ambient_attenuation, 0)
         glUniform1f(light_shader.locations.cone_dir, 0)
         glUniform1f(light_shader.locations.cone_width, 7)
         glVertexAttribPointer( light_shader.locations.vertex_data, 3, GL_FLOAT, GL_FALSE, 0, light.quad_buffer.vertex_data )

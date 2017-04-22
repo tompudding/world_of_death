@@ -17,7 +17,7 @@ def main():
         #w,h = (1600,1000)
         w,h = (1280,720)
         globals.tile_scale            = Point(1,1)
-        globals.scale                 = Point(3,3)
+        globals.scale                 = Point(2,2)
         globals.screen_abs            = Point(w,h)
         globals.music_volume = 0.1
         globals.screen                = globals.screen_abs/globals.scale
@@ -40,7 +40,7 @@ def main():
         globals.line_buffer           = drawing.LineBuffer(16384)
         globals.shadow_quadbuffer     = drawing.ShadowQuadBuffer(256*4)
         globals.temp_mouse_shadow     = globals.shadow_quadbuffer.NewLight()
-        globals.tile_dimensions       = Point(16,16)*globals.tile_scale
+        #globals.tile_dimensions       = Point(16,16)*globals.tile_scale
         globals.sounds                = sounds.Sounds()
         globals.zoom_scale            = None
         globals.time_step             = 0.02
@@ -83,7 +83,8 @@ def main():
         globals.current_view.Update(t)
         globals.current_view.Draw()
         globals.screen_root.Draw()
-        globals.text_manager.Draw()
+        drawing.ResetState()
+        #globals.text_manager.Draw()
         drawing.EndFrame()
         pygame.display.flip()
 

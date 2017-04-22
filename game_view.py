@@ -30,6 +30,7 @@ class TimeOfDay(object):
         p = math.cos(a)*r
         x = math.cos(b)*p
         y = math.sin(b)*p
+
         if t < 0.125:
             #dawn
             colour  = [d_k*math.sin(40*t/math.pi) for i in (0,1,2)]
@@ -94,15 +95,18 @@ class GameView(ui.RootElement):
         super(GameView,self).__init__(Point(0,0),globals.screen)
         #skip titles for development of the main game
 
+        #For the ambient light
         self.light      = drawing.Quad(globals.light_quads)
         self.light.SetVertices(Point(0,0),
                                globals.screen_abs - Point(0,0),
                                0)
 
-        self.timeofday = TimeOfDay(0.50)
+        self.test_light = actors.Light(Point(100,100))
+
+        self.timeofday = TimeOfDay(0.3)
         self.mode = modes.GameMode(self)
         self.StartMusic()
-        #self.fixed_light = actors.FixedLight( Point(11,38),Point(26,9) )
+        self.fixed_light = actors.FixedLight( Point(11,38),Point(26,9) )
         self.text_colour = (0,1,0,1)
 
         #self.map = GameMap('level1.txt',self)
@@ -135,7 +139,7 @@ class GameView(ui.RootElement):
 
         self.t = t
 
-        self.mouse_world = self.viewpos.pos + self.mouse_pos
+        globals.mouse_world = self.viewpos.pos + self.mouse_pos
 
     def GameOver(self):
         self.game_over = True
