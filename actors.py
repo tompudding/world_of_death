@@ -112,12 +112,12 @@ class Actor(object):
         angle_change = self.angle_speed*elapsed
         self.set_angle(self.angle + angle_change)
 
-        #self.move_speed += self.move_direction.Rotate(self.angle)*elapsed
-        self.move_speed += self.move_direction*elapsed
+        self.move_speed += self.move_direction.Rotate(self.angle)*elapsed
+        #self.move_speed += self.move_direction*elapsed
         if self.move_speed.SquareLength() > self.max_square_speed:
             self.move_speed = self.move_speed.unit_vector() * self.max_speed
 
-        self.move_speed.y -= self.move_speed.y * elapsed
+        #self.move_speed.y -= self.move_speed.y * elapsed
 
         if self.interacting:
             self.move_speed = Point(0,0)
@@ -147,7 +147,7 @@ class Actor(object):
 
 
 class Light(object):
-    z = 60
+    z = 80
     def __init__(self,pos,radius = 400, intensity = 1):
         self.radius = radius
         self.width = self.height = radius
@@ -194,7 +194,7 @@ class ActorLight(object):
         self.quad_buffer = drawing.QuadBuffer(4)
         self.quad = drawing.Quad(self.quad_buffer)
         self.colour = (1,1,1)
-        self.radius = 100
+        self.radius = 10
         self.intensity = 1
         self.on = True
         globals.non_shadow_lights.append(self)
@@ -334,3 +334,69 @@ class Boat(Actor):
         self.angle = target_angle
 
         #self.light.Update(t)
+
+    def Move(self,t):
+
+        if self.last_update == None:
+            self.last_update = globals.time
+            return 0
+        elapsed = (globals.time - self.last_update)*globals.time_step
+        self.last_update = globals.time
+
+        angle_change = self.angle_speed*elapsed
+        self.set_angle(self.angle + angle_change)
+
+        #self.move_speed += self.move_direction.Rotate(self.angle)*elapsed
+        self.move_speed += self.move_direction*elapsed
+        if self.move_speed.SquareLength() > self.max_square_speed:
+            self.move_speed = self.move_speed.unit_vector() * self.max_speed
+
+        self.move_speed.y -= self.move_speed.y * elapsed
+
+        if self.interacting:
+            self.move_speed = Point(0,0)
+
+        amount = self.move_speed * elapsed
+
+        self.SetPos(self.pos + amount)
+        #self.SetPos(self.pos)
+        return elapsed
+
+
+
+class Critter(Actor):
+    texture = 'basic_critter'
+    width = 16
+    height = 16
+    max_speed = 10
+    max_square_speed = max_speed**2
+
+    def __init__(self, pos):
+        super(Critter,self).__init__(pos)
+        self.light = ActorLight(self)
+        self.activation_length = 2000 + random.random() * 3000
+        self.activation_distance = 100 + 200 * random.random()
+        self.start_jump = None
+        self.jumping = False
+        self.splashed = False
+
+    def Update(self,t):
+        self.light.Update(t)
+        if self.jumping:
+            self.Move(t)
+            if not self.splashed and self.pos.y < 60:
+                water_height = globals.game_view.water.get_height(self.pos.x)
+                if abs(self.pos.y - water_height) < 10:
+                    globals.game_view.water.jiggle(self.pos.x, self.move_speed.y*2)
+                    self.splashed = True
+        if self.start_jump is None:
+            distance = globals.game_view.boat.pos.x - self.pos.x
+            if abs(distance) < self.activation_distance:
+                self.start_jump = globals.time + self.activation_length
+                print 'start jump in',self.activation_length
+        elif globals.time > self.start_jump and not self.jumping:
+            print 'Start jump boom'
+            distance = globals.game_view.boat.pos.x - self.pos.x
+            self.move_direction = Point(0,-1)
+            self.move_speed = Point(5*distance/abs(distance),1)
+            self.jumping = True

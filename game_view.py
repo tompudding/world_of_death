@@ -120,7 +120,7 @@ class Trapezoid(object):
 
 class Water(object):
     spread = 0.05
-    spacing = 10
+    spacing = 15
     def __init__(self, parent, height):
         self.parent = parent
         self.left = 0
@@ -151,10 +151,10 @@ class Water(object):
 
         return left_height + (right_height - left_height) * partial
 
-    def jiggle(self, x):
+    def jiggle(self, x, amount):
         n = int((x - self.left)/self.spacing)
         print 'jiggle at',x,n,len(self.trapezoids)
-        self.springs[n].velocity += 10
+        self.springs[n].velocity += amount
 
 
     def Update(self):
@@ -212,8 +212,8 @@ class Water(object):
 
 class GameView(ui.RootElement):
     water_height = 40
-    light_spacing = 150
-    light_height = 150
+    light_spacing = 250
+    light_height = 200
     def __init__(self):
         self.atlas = globals.atlas = drawing.texture.TextureAtlas('tiles_atlas_0.png','tiles_atlas.txt')
         self.enemies = []
@@ -241,7 +241,7 @@ class GameView(ui.RootElement):
         self.room_lights = []
         for i in xrange(5):
             self.lights_start = 0
-            light = actors.Light(Point(i*self.light_spacing,150))
+            light = actors.Light(Point(i*self.light_spacing,self.light_height))
             self.room_lights.append(light)
 
         self.timeofday = TimeOfDay(0.3)
@@ -254,7 +254,9 @@ class GameView(ui.RootElement):
         self.mode = modes.GameMode(self)
         #self.map.world_size = self.map.size * globals.tile_dimensions
         self.boat = actors.Boat(Point(globals.screen_showing.x /2 ,self.water_height), self.water)
-        self.boat.move_direction = Point(0.6,0)
+        self.boat.move_direction = Point(0.2,0)
+
+        self.test_critter = actors.Critter(Point(600,200))
 
     def StartMusic(self):
         return
@@ -285,6 +287,7 @@ class GameView(ui.RootElement):
         self.t = t
         self.water.Update()
         self.boat.Update(t)
+        self.test_critter.Update(t)
 
         self.viewpos.pos.x = self.boat.pos.x - globals.screen_showing.x/2
 
@@ -324,7 +327,7 @@ class GameView(ui.RootElement):
         return super(GameView,self).MouseMotion(pos,rel,handled)
 
     def MouseButtonDown(self,pos,button):
-        self.water.jiggle(globals.mouse_world.x)
+        self.water.jiggle(globals.mouse_world.x, -10)
 
         if self.mode:
             pos = self.viewpos.pos + pos
