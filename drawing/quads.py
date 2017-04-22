@@ -83,8 +83,9 @@ class QuadBuffer(ShapeBuffer):
         super(QuadBuffer,self).__init__(size)
 
 class TriangleBuffer(QuadBuffer):
+    num_points = 3
     num_vertices = 3
-    drawing.opengl.GL_TRIANGLES
+    draw_type = drawing.opengl.GL_TRIANGLES
 
 class ShadowQuadBuffer(QuadBuffer):
     def NewLight(self):
@@ -208,7 +209,7 @@ class Shape(object):
             vertices = self.old_vertices
         else:
             vertices = self.vertex
-        for i in xrange(4):
+        for i in xrange(self.num_points):
             vertices[i][0] -= amount[0]
             vertices[i][1] -= amount[1]
 

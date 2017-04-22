@@ -96,14 +96,16 @@ class Trapezoid(object):
                                        self.left_spring.top,
                                        self.right_spring.bottom, 10 )
         self.triangles[1].SetVertices( self.left_spring.top,
-                                       self.right_spring.top,
-                                       self.right_spring.bottom, 10 )
+                                       self.right_spring.bottom,
+                                       self.right_spring.top, 10 )
 
 class Water(object):
     def __init__(self):
         spacing = 10
-        num_springs = globals.screen.x / spacing
+        num_springs = globals.screen_showing.x*3 / spacing
+        #num_springs = 2
         self.springs = [Spring(i*spacing, 40) for i in xrange(num_springs)]
+
 
         self.buffer = drawing.TriangleBuffer(3*(num_springs-1)*2)
 
@@ -113,15 +115,21 @@ class Water(object):
             trapezoid = Trapezoid(self.buffer, self.springs[i], self.springs[i+1])
             self.trapezoids.append(trapezoid)
 
-        self.test_triangle = drawing.Triangle(self.buffer)
-        self.test_triangle.SetVertices( Point(0,0), Point(100,0), Point(0,100), 10 )
-        self.test_triangle.SetColour( (0.3,0.3,1,0.8) )
+        #self.test_triangle = drawing.Triangle(self.buffer)
+        #self.test_triangle.SetVertices( Point(0,0), Point(100,0), Point(0,100), 10 )
+        #self.test_triangle.SetColour( (0.3,0.3,1,0.8) )
+        #start a little wave as a test
+        print num_springs
+        #for i in xrange(30):
+        self.springs[45].top.y = 20
+
 
     def Update(self):
         for trap in self.trapezoids:
             trap.set_vertices()
 
     def Draw(self):
+        #drawing.ResetState()
         drawing.DrawNoTexture(self.buffer)
 
 class GameView(ui.RootElement):
@@ -193,7 +201,8 @@ class GameView(ui.RootElement):
             return
 
         self.t = t
-        self.boat.Update(t)
+        self.water.Update()
+        #self.boat.Update(t)
 
         self.viewpos.pos.x = self.boat.pos.x - globals.screen_showing.x/2
 
