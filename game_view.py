@@ -121,8 +121,8 @@ class Trapezoid(object):
 class Water(object):
     spread = 0.05
     spacing = 10
-    def __init__(self, height):
-
+    def __init__(self, parent, height):
+        self.parent = parent
         self.left = 0
         self.height = height
         num_springs = globals.screen_showing.x*3 / self.spacing
@@ -138,13 +138,7 @@ class Water(object):
             trapezoid = Trapezoid(self.buffer, self.springs[i], self.springs[i+1])
             self.trapezoids.append(trapezoid)
 
-        #self.test_triangle = drawing.Triangle(self.buffer)
-        #self.test_triangle.SetVertices( Point(0,0), Point(100,0), Point(0,100), 10 )
-        #self.test_triangle.SetColour( (0.3,0.3,1,0.8) )
-        #start a little wave as a test
-        print num_springs
-        #for i in xrange(30):
-        #self.springs[45].top.y = 10
+
 
     def get_height(self, x):
         offset = x - self.left
@@ -157,11 +151,30 @@ class Water(object):
 
         return left_height + (right_height - left_height) * partial
 
+    def jiggle(self, x):
+        n = int((x - self.left)/self.spacing)
+        print 'jiggle at',x,n,len(self.trapezoids)
+        self.springs[n].velocity += 10
+
 
     def Update(self):
         if self.last_update is None:
             self.last_update = globals.time
             return
+
+        if self.parent.viewpos.pos.x - self.left > globals.screen_showing.x*1.1:
+            #There's more than a whole screen of springs off to the left
+            num_to_move = int((self.parent.viewpos.pos.x - self.left - globals.screen_showing.x) / self.spacing)
+            self.springs = self.springs[num_to_move:]
+            start = self.springs[-1].bottom.x + self.spacing
+            for i in xrange(num_to_move):
+                self.springs.append(Spring(start + i*self.spacing, self.height))
+            self.left = self.springs[0].bottom.x
+
+            for i in xrange(len(self.trapezoids)):
+                self.trapezoids[i].left_spring = self.springs[i]
+                self.trapezoids[i].right_spring = self.springs[i+1]
+
 
         elapsed = (globals.time - self.last_update) * globals.time_step
         self.last_update = globals.time
@@ -209,7 +222,7 @@ class GameView(ui.RootElement):
         #Make a big background. Making it large lets opengl take care of the texture coordinates
         #TODO: tie this in with the size of the map
         self.background = Background('tile')
-        self.water = Water(height = self.water_height)
+        self.water = Water(parent = self, height = self.water_height)
 
         self.game_over = False
         self.mouse_world = Point(0,0)
@@ -241,7 +254,7 @@ class GameView(ui.RootElement):
         self.mode = modes.GameMode(self)
         #self.map.world_size = self.map.size * globals.tile_dimensions
         self.boat = actors.Boat(Point(globals.screen_showing.x /2 ,self.water_height), self.water)
-        self.boat.move_direction = Point(0.2,0)
+        self.boat.move_direction = Point(0.6,0)
 
     def StartMusic(self):
         return
@@ -311,7 +324,8 @@ class GameView(ui.RootElement):
         return super(GameView,self).MouseMotion(pos,rel,handled)
 
     def MouseButtonDown(self,pos,button):
-        self.water.springs[int(globals.mouse_world.x/10)].velocity += 10
+        self.water.jiggle(globals.mouse_world.x)
+
         if self.mode:
             pos = self.viewpos.pos + pos
             return self.mode.MouseButtonDown(pos,button)
