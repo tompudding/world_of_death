@@ -62,6 +62,12 @@ class Texture(object):
                 t = None
             setattr(self,name,t)
 
+class TextureMultiple(Texture):
+    def __init__(self, image_filename):
+        extra_names = ('_normal','_occlude','_displace')
+        extra_names = [image_filename[:-4] + extra + image_filename[-4:] for extra in extra_names]
+        super(TextureMultiple, self).__init__(image_filename,*extra_names)
+
 class RenderTarget(object):
     """
     Create a texture for rendering onto. Call Target on the object, do some rendering, then call

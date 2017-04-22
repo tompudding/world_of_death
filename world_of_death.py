@@ -17,7 +17,7 @@ def main():
         #w,h = (1600,1000)
         w,h = (1280,720)
         globals.tile_scale            = Point(1,1)
-        globals.scale                 = Point(2,2)
+        globals.scale                 = Point(4,4)
         globals.screen_abs            = Point(w,h)
         globals.music_volume = 0.1
         globals.screen                = globals.screen_abs/globals.scale
@@ -28,7 +28,7 @@ def main():
         globals.non_shadow_lights     = []
         globals.uniform_lights        = []
 
-        globals.quad_buffer           = drawing.QuadBuffer(16384)
+        globals.quad_buffer           = drawing.QuadBuffer(131072)
         globals.screen_texture_buffer = drawing.QuadBuffer(256, ui=True)
         globals.ui_buffer             = drawing.QuadBuffer(1024, ui=True)
         #globals.nonstatic_text_buffer = drawing.QuadBuffer(131072, ui=True)

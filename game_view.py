@@ -59,6 +59,22 @@ class TimeOfDay(object):
 
         return (1,3,-5),(0.25,0.25,0.4)
 
+class Background(object):
+    width = 32768
+    height = 704
+
+    def __init__(self, filename):
+        self.tc = globals.atlas.TextureSpriteCoords('%s.png' % filename)
+        #Make a grid of quads
+        self.quads = []
+        tile_size = (32,32)
+        for i in xrange(self.width/tile_size[0]):
+            for j in xrange(self.height/tile_size[1]):
+                quad = drawing.Quad(globals.quad_buffer, tc = self.tc)
+                self.quads.append(quad)
+                bl = Point(i*tile_size[0],j*tile_size[1])
+                tr = Point((i+1)*tile_size[0], (j+1)*tile_size[1])
+                quad.SetVertices(bl,tr,0)
 
 class GameView(ui.RootElement):
     def __init__(self):
@@ -66,6 +82,9 @@ class GameView(ui.RootElement):
         self.enemies = []
         #globals.ui_atlas = drawing.texture.TextureAtlas('ui_atlas_0.png','ui_atlas.txt',extra_names=False)
         self.viewpos = ViewPos(Point(0,0))
+        #Make a big background. Making it large lets opengl take care of the texture coordinates
+        #TODO: tie this in with the size of the map
+        self.background = Background('tile')
 
         self.game_over = False
         self.mouse_world = Point(0,0)
@@ -80,7 +99,7 @@ class GameView(ui.RootElement):
                                globals.screen_abs - Point(0,0),
                                0)
 
-        self.timeofday = TimeOfDay(0.30)
+        self.timeofday = TimeOfDay(0.50)
         self.mode = modes.GameMode(self)
         self.StartMusic()
         #self.fixed_light = actors.FixedLight( Point(11,38),Point(26,9) )
@@ -102,7 +121,9 @@ class GameView(ui.RootElement):
     def Draw(self):
         drawing.ResetState()
         drawing.Translate(-self.viewpos.pos.x,-self.viewpos.pos.y,0)
+
         drawing.DrawAll(globals.quad_buffer,self.atlas.texture)
+
         #drawing.DrawAll(globals.nonstatic_text_buffer,globals.text_manager.atlas.texture)
 
     def Update(self,t):

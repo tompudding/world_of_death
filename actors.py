@@ -23,6 +23,8 @@ class Actor(object):
         self.quad           = drawing.Quad(globals.quad_buffer,tc = self.tc)
         self.size           = Point(self.width,self.height)
         self.corners = self.size, Point(-self.size.x,self.size.y), Point(-self.size.x,-self.size.y), Point(self.size.x,-self.size.y)
+        #that's a weird order
+        self.corners = [self.corners[2],self.corners[1],self.corners[0],self.corners[3]]
         self.corners        = [p*0.5 for p in self.corners]
         self.corners_polar  = [(p.length(),((1+i*2)*math.pi)/4) for i,p in enumerate(self.corners)]
         self.radius_square  = (self.size.x/2)**2 + (self.size.y/2)**2
@@ -284,8 +286,8 @@ class Torch(ConeLight):
 
 class Boat(Actor):
     texture = 'boat'
-    width = 128
-    height = 64
+    width = 108
+    height = 27
 
     def __init__(self,pos):
         super(Boat,self).__init__(pos)
