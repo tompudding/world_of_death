@@ -77,6 +77,53 @@ class Background(object):
                 tr = Point((i+1)*tile_size[0], (j+1)*tile_size[1])
                 quad.SetVertices(bl,tr,0)
 
+class Spring(object):
+    def __init__(self, x, y):
+        self.bottom = Point(x, 0)
+        self.top = Point(x, y)
+
+class Trapezoid(object):
+    def __init__(self, buf, left_spring, right_spring):
+        self.triangles = [drawing.Triangle(buf) for i in xrange(2)]
+        self.left_spring = left_spring
+        self.right_spring = right_spring
+        for t in self.triangles:
+            t.SetColour((0.3,0.3,1,0.8))
+        self.set_vertices()
+
+    def set_vertices(self):
+        self.triangles[0].SetVertices( self.left_spring.bottom,
+                                       self.left_spring.top,
+                                       self.right_spring.bottom, 10 )
+        self.triangles[1].SetVertices( self.left_spring.top,
+                                       self.right_spring.top,
+                                       self.right_spring.bottom, 10 )
+
+class Water(object):
+    def __init__(self):
+        spacing = 10
+        num_springs = globals.screen.x / spacing
+        self.springs = [Spring(i*spacing, 40) for i in xrange(num_springs)]
+
+        self.buffer = drawing.TriangleBuffer(3*(num_springs-1)*2)
+
+        #try a test triangle
+        self.trapezoids = []
+        for i in xrange(num_springs-1):
+            trapezoid = Trapezoid(self.buffer, self.springs[i], self.springs[i+1])
+            self.trapezoids.append(trapezoid)
+
+        self.test_triangle = drawing.Triangle(self.buffer)
+        self.test_triangle.SetVertices( Point(0,0), Point(100,0), Point(0,100), 10 )
+        self.test_triangle.SetColour( (0.3,0.3,1,0.8) )
+
+    def Update(self):
+        for trap in self.trapezoids:
+            trap.set_vertices()
+
+    def Draw(self):
+        drawing.DrawNoTexture(self.buffer)
+
 class GameView(ui.RootElement):
     def __init__(self):
         self.atlas = globals.atlas = drawing.texture.TextureAtlas('tiles_atlas_0.png','tiles_atlas.txt')
@@ -86,13 +133,7 @@ class GameView(ui.RootElement):
         #Make a big background. Making it large lets opengl take care of the texture coordinates
         #TODO: tie this in with the size of the map
         self.background = Background('tile')
-        self.water_buffer = drawing.TriangleBuffer(1024)
-
-        #try a test triangle
-        self.test_triangle = drawing.Triangle(self.water_buffer)
-        self.test_triangle.SetVertices( Point(0,0), Point(100,0), Point(0,100), 10 )
-        self.test_triangle.SetColour( (0.3,0.3,1,0.8) )
-
+        self.water = Water()
 
         self.game_over = False
         self.mouse_world = Point(0,0)
@@ -140,7 +181,7 @@ class GameView(ui.RootElement):
         drawing.DrawAll(globals.quad_buffer,self.atlas.texture)
         #glEnable(GL_BLEND);
         #glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        #drawing.DrawNoTexture(self.water_buffer)
+        self.water.Draw()
 
         #drawing.DrawAll(globals.nonstatic_text_buffer,globals.text_manager.atlas.texture)
 
