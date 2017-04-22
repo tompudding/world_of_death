@@ -89,6 +89,7 @@ class GameView(ui.RootElement):
         #self.map = GameMap('level1.txt',self)
         self.mode = modes.GameMode(self)
         #self.map.world_size = self.map.size * globals.tile_dimensions
+        self.boat = actors.Boat(Point(100,50))
 
     def StartMusic(self):
         return

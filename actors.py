@@ -17,22 +17,17 @@ class Actor(object):
     texture = None
     width   = None
     height  = None
-    threshold = 0.01
     initial_health = 100
-    max_speed = 0.25
-    max_square_speed = max_speed**2
-    def __init__(self,map,pos):
-        self.map            = map
+    def __init__(self,pos):
         self.tc             = globals.atlas.TextureSpriteCoords('%s.png' % self.texture)
         self.quad           = drawing.Quad(globals.quad_buffer,tc = self.tc)
-        self.size           = Point(float(self.width)/16,float(self.height)/16)
+        self.size           = Point(self.width,self.height)
         self.corners = self.size, Point(-self.size.x,self.size.y), Point(-self.size.x,-self.size.y), Point(self.size.x,-self.size.y)
         self.corners        = [p*0.5 for p in self.corners]
         self.corners_polar  = [(p.length(),((1+i*2)*math.pi)/4) for i,p in enumerate(self.corners)]
         self.radius_square  = (self.size.x/2)**2 + (self.size.y/2)**2
         self.radius         = math.sqrt(self.radius_square)
         self.corners_euclid = [p for p in self.corners]
-        self.current_sound  = None
         self.last_update    = None
         self.dead           = False
         self.move_speed     = Point(0,0)
@@ -50,14 +45,6 @@ class Actor(object):
 
     def mid_point(self):
         return self.pos + (self.size/2).Rotate(self.angle)
-
-    def RemoveFromMap(self):
-        if self.pos != None:
-            bl = self.pos.to_int()
-            tr = (self.pos+self.size).to_int()
-            for x in xrange(bl.x,tr.x+1):
-                for y in xrange(bl.y,tr.y+1):
-                    self.map.RemoveActor(Point(x,y),self)
 
     def AdjustHealth(self,amount):
         self.health += amount
@@ -78,24 +65,20 @@ class Actor(object):
         self.AdjustHealth(-amount)
 
     def SetPos(self,pos):
-        self.RemoveFromMap()
         self.pos = pos
 
-        self.vertices = [((pos + corner)*globals.tile_dimensions).to_int() for corner in self.corners_euclid]
+        self.vertices = [((pos + corner)).to_int() for corner in self.corners_euclid]
 
         bl = pos
         tr = bl + self.size
         bl = bl.to_int()
         tr = tr.to_int()
         #self.quad.SetVertices(bl,tr,4)
+        print self.vertices
         self.quad.SetAllVertices(self.vertices, 4)
-        for x in xrange(bl.x,tr.x+1):
-            for y in xrange(bl.y,tr.y+1):
-                self.map.AddActor(Point(x,y),self)
 
     def TriggerCollide(self,other):
         pass
-
 
     def set_angle(self, angle):
         self.angle = angle%(2*math.pi)
@@ -125,104 +108,12 @@ class Actor(object):
         if self.move_speed.SquareLength() > self.max_square_speed:
             self.move_speed = self.move_speed.unit_vector() * self.max_speed
 
-        mp = self.mid_point().to_int()
-        try:
-            tile = self.map.data[mp.x][mp.y]
-            if tile.type == game_view.TileTypes.ICE:
-                friction = 0.002*elapsed
-                if not globals.wee_played:
-                    globals.sounds.weee.play()
-                    globals.wee_played = True
-            else:
-                friction = 0.05*elapsed
-
-        except IndexError:
-            friction = 0.05*elapsed
-
-        if friction:
-            friction = self.move_speed.unit_vector()*friction
-            if friction.SquareLength() < self.move_speed.SquareLength():
-            #self.move_speed *= 0.7*(1-(elapsed/1000.0))
-                self.move_speed -= friction
-            else:
-                self.move_speed = Point(0,0)
-
-        if tile.type != game_view.TileTypes.ICE:#There's friction so also make some tracks
-            if globals.time - self.last_track > 10 and self.move_speed.SquareLength() > 0.001 or abs(angle_change) > 0.001:
-                self.last_track = globals.time
-                quad = drawing.Quad(globals.quad_buffer,tc = globals.atlas.TextureSpriteCoords('tracks.png'))
-                quad.SetAllVertices(self.vertices, 0.5)
-                self.track_quads.append(quad)
-                if len(self.track_quads) > 10000:
-                    q = self.track_quads.pop(0)
-                    q.Delete()
-
         if self.interacting:
             self.move_speed = Point(0,0)
 
         amount = self.move_speed * elapsed
 
-        bl = self.pos.to_int()
-        tr = (self.pos+self.size).to_int()
-        for x in xrange(bl.x,tr.x+1):
-            for y in xrange(bl.y,tr.y+1):
-                try:
-                    for actor in self.map.data[x][y].actors:
-                        if actor is self:
-                            continue
-                        distance = actor.pos - self.pos
-                        if distance.SquareLength() < self.radius_square + actor.radius_square:
-                            overlap = self.radius + actor.radius - distance.length()
-                            adjust = distance.unit_vector()*-overlap
-                            amount += adjust*0.1
-                            self.TriggerCollide(actor)
-                            #We've hit, so move us away from it's centre by the overlap
-                except IndexError:
-                    pass
-
-        #check each of our four corners
-        for corner in self.corners:
-            pos = self.pos + corner
-            target_x = pos.x + amount.x
-            if target_x >= self.map.size.x:
-                amount.x = 0
-                target_x = pos.x
-            elif target_x < 0:
-                amount.x = -pos.x
-                target_x = 0
-
-            target_tile_x = self.map.data[int(target_x)][int(pos.y)]
-            if target_tile_x.type in game_view.TileTypes.Impassable:
-                amount.x = 0
-
-            elif (int(target_x),int(pos.y)) in self.map.object_cache:
-                obj = self.map.object_cache[int(target_x),int(pos.y)]
-                if obj.Contains(Point(target_x,pos.y)):
-                    amount.x = 0
-
-            target_y = pos.y + amount.y
-            if target_y >= self.map.size.y:
-                amount.y = 0
-                target_y = pos.y
-            elif target_y < 0:
-                amount.y = -pos.y
-                target_y = 0
-            target_tile_y = self.map.data[int(pos.x)][int(target_y)]
-            if target_tile_y.type in game_view.TileTypes.Impassable:
-                amount.y = 0
-            elif (int(pos.x),int(target_y)) in self.map.object_cache:
-                obj = self.map.object_cache[int(pos.x),int(target_y)]
-                if obj.Contains(Point(pos.x,target_y)):
-                    amount.y = 0
-
-
         self.SetPos(self.pos + amount)
-
-        if self.interacting:
-            diff = self.interacting.pos + (self.interacting.size*0.5) - self.pos
-            distance = diff.length()
-            if distance > 2.5:
-                self.deactivate()
 
     def GetPos(self):
         return self.pos
@@ -238,7 +129,7 @@ class Actor(object):
 
     @property
     def screen_pos(self):
-        p = (self.pos*globals.tile_dimensions - globals.game_view.viewpos._pos)*globals.scale
+        p = (self.pos - globals.game_view.viewpos._pos)*globals.scale
         return p
 
 
@@ -262,7 +153,7 @@ class Light(object):
 
     def set_pos(self,pos):
         self.world_pos = pos
-        pos = pos*globals.tile_dimensions
+        pos = pos
         self.pos = (pos.x,pos.y,self.z)
         box = (globals.tile_scale*Point(self.width,self.height))
         bl = Point(*self.pos[:2]) - box*0.5
@@ -296,39 +187,18 @@ class ActorLight(object):
         globals.non_shadow_lights.append(self)
 
     def Update(self,t):
-        self.vertices = [((self.parent.pos + corner*2)*globals.tile_dimensions).to_int() for corner in self.parent.corners_euclid]
+        self.vertices = [((self.parent.pos + corner*2)).to_int() for corner in self.parent.corners_euclid]
         self.quad.SetAllVertices(self.vertices, 0)
 
     @property
     def pos(self):
-        return (self.parent.pos.x*globals.tile_dimensions.x,self.parent.pos.y*globals.tile_dimensions.y,self.z)
-
-class MorseLight(object):
-    z = 6
-    def __init__(self,parent,colour):
-        self.parent = parent
-        self.quad_buffer = drawing.QuadBuffer(4)
-        self.quad = drawing.Quad(self.quad_buffer)
-        self.colour = colour
-        self.radius = 60
-        self.intensity = 1
-        self.on = True
-        globals.non_shadow_lights.append(self)
-
-    def Update(self,t):
-        self.vertices = [((self.parent.pos + corner*3)*globals.tile_dimensions).to_int() for corner in self.parent.corners_euclid]
-        self.quad.SetAllVertices(self.vertices, 0)
-
-    @property
-    def pos(self):
-        return (self.parent.pos.x*globals.tile_dimensions.x,self.parent.pos.y*globals.tile_dimensions.y,self.z)
-
+        return (self.parent.pos.x,self.parent.pos.y,self.z)
 
 class FixedLight(object):
     z = 6
     def __init__(self,pos,size):
         #self.world_pos = pos
-        self.pos = pos*globals.tile_dimensions
+        self.pos = pos
         self.size = size
         self.quad_buffer = drawing.QuadBuffer(4)
         self.quad = drawing.Quad(self.quad_buffer)
@@ -336,7 +206,7 @@ class FixedLight(object):
         self.on = True
         globals.uniform_lights.append(self)
         self.pos = (self.pos.x,self.pos.y,self.z)
-        box = (self.size*globals.tile_dimensions)
+        box = (self.size)
         bl = Point(*self.pos[:2])
         tr = bl + box
         bl = bl.to_int()
@@ -358,7 +228,7 @@ class ConeLight(object):
         self.angle = angle
         self.angle_width = width
         self.on = True
-        pos = pos*globals.tile_dimensions
+        pos = pos
         self.world_pos = pos
         self.pos = (pos.x,pos.y,self.z)
         box = (globals.tile_scale*Point(self.width,self.height))
@@ -399,7 +269,7 @@ class Torch(ConeLight):
     @property
     def pos(self):
         offset = cmath.rect(self.offset[0],self.offset[1]+self.parent.angle)
-        pos = (self.parent.pos + Point(offset.real,offset.imag))*globals.tile_dimensions
+        pos = (self.parent.pos + Point(offset.real,offset.imag))
         return (pos.x,pos.y,self.z)
 
     def Update(self,t):
@@ -411,3 +281,17 @@ class Torch(ConeLight):
         tr = tr.to_int()
         self.quad.SetVertices(bl,tr,4)
         #self.quad.SetAllVertices(self.parent.vertices, 0)
+
+class Boat(Actor):
+    texture = 'boat'
+    width = 128
+    height = 64
+
+    def __init__(self,pos):
+        super(Boat,self).__init__(pos)
+        self.light = ActorLight(self)
+
+    def Update(self,t):
+
+        super(Robot,self).Update(t)
+        self.light.Update(t)
