@@ -94,7 +94,7 @@ class Spring(object):
         acc = -self.k * diff
 
         self.velocity += (acc * elapsed)
-        #self.velocity -= self.velocity * self.damping * elapsed
+        self.velocity -= self.velocity * self.damping * elapsed
         self.top.y += (self.velocity * elapsed)
 
 
@@ -120,11 +120,14 @@ class Trapezoid(object):
 
 class Water(object):
     spread = 0.05
-    def __init__(self):
-        spacing = 10
-        num_springs = globals.screen_showing.x*3 / spacing
+    spacing = 10
+    def __init__(self, height):
+
+        self.left = 0
+        self.height = height
+        num_springs = globals.screen_showing.x*3 / self.spacing
         #num_springs = 2
-        self.springs = [Spring(i*spacing, 40) for i in xrange(num_springs)]
+        self.springs = [Spring(i*self.spacing, self.height) for i in xrange(num_springs)]
 
         self.buffer = drawing.TriangleBuffer(3*(num_springs-1)*2)
         self.last_update = None
@@ -142,6 +145,17 @@ class Water(object):
         print num_springs
         #for i in xrange(30):
         #self.springs[45].top.y = 10
+
+    def get_height(self, x):
+        offset = x - self.left
+        i = int(offset / self.spacing)
+        j = i + 1
+        partial = float(offset % self.spacing) / self.spacing
+
+        left_height = self.springs[i].top.y
+        right_height = self.springs[j].top.y
+
+        return left_height + (right_height - left_height) * partial
 
 
     def Update(self):
@@ -184,6 +198,9 @@ class Water(object):
         drawing.DrawNoTexture(self.buffer)
 
 class GameView(ui.RootElement):
+    water_height = 40
+    light_spacing = 150
+    light_height = 150
     def __init__(self):
         self.atlas = globals.atlas = drawing.texture.TextureAtlas('tiles_atlas_0.png','tiles_atlas.txt')
         self.enemies = []
@@ -192,7 +209,7 @@ class GameView(ui.RootElement):
         #Make a big background. Making it large lets opengl take care of the texture coordinates
         #TODO: tie this in with the size of the map
         self.background = Background('tile')
-        self.water = Water()
+        self.water = Water(height = self.water_height)
 
         self.game_over = False
         self.mouse_world = Point(0,0)
@@ -205,12 +222,13 @@ class GameView(ui.RootElement):
         #For the ambient light
         self.light      = drawing.Quad(globals.light_quads)
         self.light.SetVertices(Point(0,0),
-                               globals.screen_abs - Point(0,0),
+                               globals.screen_showing - Point(0,0),
                                0)
 
         self.room_lights = []
-        for i in xrange(10):
-            light = actors.Light(Point(i*150,150))
+        for i in xrange(5):
+            self.lights_start = 0
+            light = actors.Light(Point(i*self.light_spacing,150))
             self.room_lights.append(light)
 
         self.timeofday = TimeOfDay(0.3)
@@ -222,8 +240,8 @@ class GameView(ui.RootElement):
         #self.map = GameMap('level1.txt',self)
         self.mode = modes.GameMode(self)
         #self.map.world_size = self.map.size * globals.tile_dimensions
-        self.boat = actors.Boat(Point(globals.screen.x / 2 - actors.Boat.width/(globals.scale.x*2),50))
-        self.boat.move_speed = Point(1,0)
+        self.boat = actors.Boat(Point(globals.screen_showing.x /2 ,self.water_height), self.water)
+        self.boat.move_direction = Point(0.2,0)
 
     def StartMusic(self):
         return
@@ -253,9 +271,16 @@ class GameView(ui.RootElement):
 
         self.t = t
         self.water.Update()
-        #self.boat.Update(t)
+        self.boat.Update(t)
 
         self.viewpos.pos.x = self.boat.pos.x - globals.screen_showing.x/2
+
+        if int((self.viewpos.pos.x - self.lights_start)/self.light_spacing) >= 1:
+            #move the first to the last
+            self.lights_start += self.light_spacing
+            self.room_lights = self.room_lights[1:] + self.room_lights[:1]
+
+            self.room_lights[-1].set_pos( Point(self.lights_start + (len(self.room_lights)-1)*self.light_spacing,self.light_height) )
 
         globals.mouse_world = self.viewpos.pos + self.mouse_pos
 
@@ -279,6 +304,7 @@ class GameView(ui.RootElement):
     def MouseMotion(self,pos,rel,handled):
         world_pos = self.viewpos.pos + pos
         self.mouse_pos = pos
+        #print globals.mouse_world
 
         self.mode.MouseMotion(world_pos,rel)
 

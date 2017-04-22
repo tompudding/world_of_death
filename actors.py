@@ -18,7 +18,9 @@ class Actor(object):
     width   = None
     height  = None
     initial_health = 100
-    max_square_speed = 10
+
+    max_speed = 3
+    max_square_speed = max_speed**2
     def __init__(self,pos):
         self.tc             = globals.atlas.TextureSpriteCoords('%s.png' % self.texture)
         self.quad           = drawing.Quad(globals.quad_buffer,tc = self.tc)
@@ -94,7 +96,7 @@ class Actor(object):
         self.corners_euclid = [Point(c.real,c.imag) for c in cnums]
 
     def Update(self,t):
-        self.Move(t)
+        return self.Move(t)
 
     def hand_pos(self):
         return self.pos + self.hand_offset.Rotate(self.angle)
@@ -103,16 +105,19 @@ class Actor(object):
 
         if self.last_update == None:
             self.last_update = globals.time
-            return
+            return 0
         elapsed = (globals.time - self.last_update)*globals.time_step
         self.last_update = globals.time
 
         angle_change = self.angle_speed*elapsed
-        #self.set_angle(self.angle + angle_change)
+        self.set_angle(self.angle + angle_change)
 
-        self.move_speed += self.move_direction.Rotate(self.angle)*elapsed
+        #self.move_speed += self.move_direction.Rotate(self.angle)*elapsed
+        self.move_speed += self.move_direction*elapsed
         if self.move_speed.SquareLength() > self.max_square_speed:
             self.move_speed = self.move_speed.unit_vector() * self.max_speed
+
+        self.move_speed.y -= self.move_speed.y * elapsed
 
         if self.interacting:
             self.move_speed = Point(0,0)
@@ -121,6 +126,7 @@ class Actor(object):
 
         self.SetPos(self.pos + amount)
         #self.SetPos(self.pos)
+        return elapsed
 
     def GetPos(self):
         return self.pos
@@ -293,12 +299,38 @@ class Boat(Actor):
     texture = 'boat'
     width = 108
     height = 27
+    water_height = 10
+    max_speed = 3
+    max_square_speed = max_speed**2
 
-    def __init__(self,pos):
-        super(Boat,self).__init__(pos)
+    def __init__(self,pos,water):
+        self.water = water
+        super(Boat,self).__init__(Point(pos.x, pos.y + self.water_height))
         #self.light = ActorLight(self)
 
     def Update(self,t):
+        elapsed = super(Boat,self).Update(t)
+        if not elapsed:
+            return
+        #we update our angle based on the water height at our ends
+        water_height = self.water.get_height(self.pos.x + self.size.x/2)
+        new_pos = water_height + self.water_height
 
-        super(Boat,self).Update(t)
+        #print 'md',self.move_direction
+
+        #print 'boat',self.pos.x,self.pos.x+self.size.x, new_pos, self.move_direction
+        self.move_direction.y = (new_pos - self.pos.y) * elapsed
+        #friction for the water
+        self.move_speed.x -= self.move_speed.x * 0.2 * elapsed
+
+        front_height = self.water.get_height(self.pos.x + self.size.x/2)
+        back_height = self.water.get_height(self.pos.x - self.size.x/2)
+
+        target_angle = cmath.polar(self.size.x + (front_height - back_height)*1j)[1]
+
+        #angle_acc = (target_angle - self.angle) * 0.01
+        #print target_angle,self.angle,angle_acc
+        #self.angle_speed += angle_acc * elapsed
+        self.angle = target_angle
+
         #self.light.Update(t)

@@ -377,24 +377,7 @@ def EndFrameGameMode():
     glUniform1f(light_shader.locations.light_intensity, 1)
 
 
-    quad_buffer = globals.temp_mouse_light
-
-    #Hack, do the mouse light separate for now so we can set it's position. Should be done elsewhere really and be in
-    #the lights list
     Scale(globals.scale.x,globals.scale.y,1)
-    Translate(-globals.game_view.viewpos.pos.x,-globals.game_view.viewpos.pos.y,0)
-    glUniform1i(light_shader.locations.light_type, 2)
-    glUniform1i(light_shader.locations.shadow_index, 0)
-    glUniform3f(light_shader.locations.light_pos, globals.mouse_screen.x, globals.mouse_screen.y,120)
-    glUniform3f(light_shader.locations.light_colour, 1,1,1)
-    glUniform1f(light_shader.locations.cone_dir, 0)
-    glUniform1f(light_shader.locations.cone_width, 7)
-    glVertexAttribPointer( light_shader.locations.vertex_data, 3, GL_FLOAT, GL_FALSE, 0, quad_buffer.vertex_data )
-    globals.mouse_light_quad.SetVertices(globals.mouse_world - Point(400,400),
-                                         globals.mouse_world + Point(400,400),0.1)
-    glDrawElements(GL_QUADS,quad_buffer.current_size,GL_UNSIGNED_INT,quad_buffer.indices)
-
-
     #Need to draw some lights...
     timeofday = globals.game_view.timeofday
     quad_buffer = globals.light_quads
@@ -409,6 +392,24 @@ def EndFrameGameMode():
     glVertexAttribPointer( light_shader.locations.vertex_data, 3, GL_FLOAT, GL_FALSE, 0, quad_buffer.vertex_data )
 
     #This is the ambient light box around the whole screen for sunlight
+    glDrawElements(GL_QUADS,quad_buffer.current_size,GL_UNSIGNED_INT,quad_buffer.indices)
+
+
+    quad_buffer = globals.temp_mouse_light
+
+    #Hack, do the mouse light separate for now so we can set it's position. Should be done elsewhere really and be in
+    #the lights list
+
+    Translate(-globals.game_view.viewpos.pos.x,-globals.game_view.viewpos.pos.y,0)
+    glUniform1i(light_shader.locations.light_type, 2)
+    glUniform1i(light_shader.locations.shadow_index, 0)
+    glUniform3f(light_shader.locations.light_pos, globals.mouse_screen.x, globals.mouse_screen.y,120)
+    glUniform3f(light_shader.locations.light_colour, 1,1,1)
+    glUniform1f(light_shader.locations.cone_dir, 0)
+    glUniform1f(light_shader.locations.cone_width, 7)
+    glVertexAttribPointer( light_shader.locations.vertex_data, 3, GL_FLOAT, GL_FALSE, 0, quad_buffer.vertex_data )
+    globals.mouse_light_quad.SetVertices(globals.mouse_world - Point(400,400),
+                                         globals.mouse_world + Point(400,400),0.1)
     glDrawElements(GL_QUADS,quad_buffer.current_size,GL_UNSIGNED_INT,quad_buffer.indices)
 
     #Now get the nighttime illumination
