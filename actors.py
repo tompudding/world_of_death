@@ -352,6 +352,7 @@ class Boat(Actor):
             self.move_speed = self.move_speed.unit_vector() * self.max_speed
 
         self.move_speed.y -= self.move_speed.y * elapsed
+        #print 'bms',self.move_speed.x
 
         if self.interacting:
             self.move_speed = Point(0,0)
@@ -368,35 +369,64 @@ class Critter(Actor):
     texture = 'basic_critter'
     width = 16
     height = 16
-    max_speed = 10
+    max_speed = 100
     max_square_speed = max_speed**2
 
     def __init__(self, pos):
         super(Critter,self).__init__(pos)
-        self.light = ActorLight(self)
+        #self.light = ActorLight(self)
         self.activation_length = 2000 + random.random() * 3000
-        self.activation_distance = 100 + 200 * random.random()
+        self.activation_distance = 150 + 200 * random.random()
         self.start_jump = None
         self.jumping = False
         self.splashed = False
 
     def Update(self,t):
-        self.light.Update(t)
+        #self.light.Update(t)
+        boat = globals.game_view.boat
         if self.jumping:
             self.Move(t)
             if not self.splashed and self.pos.y < 60:
                 water_height = globals.game_view.water.get_height(self.pos.x)
                 if abs(self.pos.y - water_height) < 10:
-                    globals.game_view.water.jiggle(self.pos.x, self.move_speed.y*2)
+                    globals.game_view.water.jiggle(self.pos.x, self.move_speed.y)
                     self.splashed = True
+
+                    #print 'ended at',globals.time,boat.pos.x,self.pos.x
+
+            if self.pos.y < 0:
+                self.quad.Disable()
+                self.quad.Delete()
+                self.dead = True
+
         if self.start_jump is None:
-            distance = globals.game_view.boat.pos.x - self.pos.x
+            distance = boat.pos.x - self.pos.x
             if abs(distance) < self.activation_distance:
                 self.start_jump = globals.time + self.activation_length
                 print 'start jump in',self.activation_length
+            #self.start_jump = globals.time
         elif globals.time > self.start_jump and not self.jumping:
-            print 'Start jump boom'
-            distance = globals.game_view.boat.pos.x - self.pos.x
-            self.move_direction = Point(0,-1)
-            self.move_speed = Point(5*distance/abs(distance),1)
+            print 'Start jump boom',globals.time
+            gravity = -1
+            fall_distance = -(self.pos.y - boat.pos.y)
+            start_speed_y = random.random()*10
+            a = gravity
+
+            fall_time = (math.sqrt(start_speed_y**2 + 2*a*fall_distance) - start_speed_y) / a
+            x = (-math.sqrt(start_speed_y**2 + 2*a*fall_distance) - start_speed_y) / a
+
+            fall_time = max(fall_time,x)/globals.time_step
+
+            #print 'guess at',globals.time + fall_time
+            #What position will the boat be in at that time?
+            boat_pos_future = boat.pos.x + boat.move_speed.x*fall_time*globals.time_step
+            #print 'boat_pos guess',boat_pos_future,boat.pos.x
+            #Now we just need to choose our x speed to arrive there at that time
+            distance = boat_pos_future - self.pos.x
+
+            self.move_direction = Point(0,gravity)
+
+            #s = ut + 1/2*a*t*t =>
+
+            self.move_speed = Point(distance/(fall_time*globals.time_step),start_speed_y)
             self.jumping = True

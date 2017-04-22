@@ -154,6 +154,8 @@ class Water(object):
     def jiggle(self, x, amount):
         n = int((x - self.left)/self.spacing)
         print 'jiggle at',x,n,len(self.trapezoids)
+        print self.springs[n].velocity
+        #if abs(self.springs[n].velocity) < 10:
         self.springs[n].velocity += amount
 
 
@@ -256,7 +258,11 @@ class GameView(ui.RootElement):
         self.boat = actors.Boat(Point(globals.screen_showing.x /2 ,self.water_height), self.water)
         self.boat.move_direction = Point(0.2,0)
 
-        self.test_critter = actors.Critter(Point(600,200))
+        self.critters = []
+        for i in xrange(10):
+            x = 200 + random.random()*600
+            y = 60 + random.random()*240
+            self.critters.append(actors.Critter(Point(x,y)))
 
     def StartMusic(self):
         return
@@ -287,7 +293,9 @@ class GameView(ui.RootElement):
         self.t = t
         self.water.Update()
         self.boat.Update(t)
-        self.test_critter.Update(t)
+        for critter in self.critters:
+            critter.Update(t)
+        self.critters = [critter for critter in self.critters if not critter.dead]
 
         self.viewpos.pos.x = self.boat.pos.x - globals.screen_showing.x/2
 
