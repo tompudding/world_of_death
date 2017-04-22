@@ -381,7 +381,8 @@ def EndFrameGameMode():
 
     #Hack, do the mouse light separate for now so we can set it's position. Should be done elsewhere really and be in
     #the lights list
-    #Scale(globals.scale.x,globals.scale.y,1)
+    Scale(globals.scale.x,globals.scale.y,1)
+    Translate(-globals.game_view.viewpos.pos.x,-globals.game_view.viewpos.pos.y,0)
     glUniform1i(light_shader.locations.light_type, 2)
     glUniform1i(light_shader.locations.shadow_index, 0)
     glUniform3f(light_shader.locations.light_pos, globals.mouse_screen.x, globals.mouse_screen.y,120)
@@ -421,8 +422,8 @@ def EndFrameGameMode():
     # glVertexAttribPointer( light_shader.locations.vertex_data, 3, GL_FLOAT, GL_FALSE, 0, quad_buffer.vertex_data )
     # glDrawElements(GL_QUADS,quad_buffer.current_size,GL_UNSIGNED_INT,quad_buffer.indices)
 
-    Scale(globals.scale.x,globals.scale.y,1)
-    Translate(-globals.game_view.viewpos.pos.x,-globals.game_view.viewpos.pos.y,0)
+    #Scale(globals.scale.x,globals.scale.y,1)
+    #Translate(-globals.game_view.viewpos.pos.x,-globals.game_view.viewpos.pos.y,0)
 
     glUniform1i(light_shader.locations.light_type, 2)
     for light in globals.lights:

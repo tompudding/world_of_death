@@ -109,7 +109,7 @@ def main():
             else:
 
                 try:
-                    pos = Point(float(event.pos[0])/globals.scale[0],globals.screen[1]-(float(event.pos[1])/globals.scale[1]))
+                    pos = Point(float(event.pos[0])/globals.scale[0],globals.screen_showing[1]-(float(event.pos[1])/globals.scale[1]))
                 except AttributeError:
                     continue
 
