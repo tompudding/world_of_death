@@ -603,7 +603,7 @@ def DrawNoTextureNow(quad_buffer,shader):
     glVertexAttribPointer( shader.locations.vertex_data, 3, GL_FLOAT, GL_FALSE, 0, quad_buffer.vertex_data );
     glVertexAttribPointer( shader.locations.colour_data, 4, GL_FLOAT, GL_FALSE, 0, quad_buffer.colour_data );
 
-    glDrawElements(GL_QUADS,quad_buffer.current_size,GL_UNSIGNED_INT,quad_buffer.indices)
+    glDrawElements(quad_buffer.draw_type,quad_buffer.current_size,GL_UNSIGNED_INT,quad_buffer.indices)
 
     glDisableVertexAttribArray( shader.locations.vertex_data );
     glDisableVertexAttribArray( shader.locations.colour_data );

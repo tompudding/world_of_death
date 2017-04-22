@@ -82,6 +82,10 @@ class QuadBuffer(ShapeBuffer):
         self.mouse_relative = mouse_relative
         super(QuadBuffer,self).__init__(size)
 
+class TriangleBuffer(QuadBuffer):
+    num_vertices = 3
+    drawing.opengl.GL_TRIANGLES
+
 class ShadowQuadBuffer(QuadBuffer):
     def NewLight(self):
         row = self.current_size / self.num_points
@@ -229,6 +233,11 @@ def setverticesquad(self,vertex,bl,tr,z):
     vertex[2] = (tr.x,tr.y,z)
     vertex[3] = (tr.x,bl.y,z)
 
+def setverticestriangle(self,vertex,a,b,c,z):
+    vertex[0] = (a.x,a.y,z)
+    vertex[1] = (b.x,b.y,z)
+    vertex[2] = (c.x,c.y,z)
+
 def setallvertices(self,vertex,vertices,z):
     for i,v in enumerate(vertices):
         vertex[i] = (v.x,v.y,z)
@@ -252,6 +261,11 @@ def setcolourline(self,colour,value):
         for j in xrange(4):
             colour[i][j] = value[j]
 
+def setcolourtriangle(self,colour,value):
+    for i in xrange(3):
+        for j in xrange(4):
+            colour[i][j] = value[j]
+
 def setcoloursline(self,colour,values):
     for i in xrange(2):
         for j in xrange(4):
@@ -266,6 +280,21 @@ class Line(Shape):
     num_points = 2
     setvertices = setverticesline
     setcolour   = setcolourline
+
+class Triangle(Shape):
+    num_points = 3
+    setvertices = setverticestriangle
+    setcolour   = setcolourtriangle
+
+    def SetVertices(self,a,b,c,z):
+        if self.deleted:
+            return
+        self.setvertices(self.vertex,a,b,c,z)
+        if self.old_vertices != None:
+            self.old_vertices = numpy.copy(self.vertex[0:self.num_points])
+            for i in xrange(self.num_points):
+                self.vertex[i] = (0,0,0)
+
 
 
 class QuadBorder(object):

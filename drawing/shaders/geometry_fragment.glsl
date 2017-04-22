@@ -32,7 +32,7 @@ void main()
     }
     else {
         diffuse = vs_colour;
-        normal = vec4(0,0,0,1);
+        normal = vec4(0,0,1,1);
         occlude = vec4(0,0,0,0);
         displacement = vec4(0,0,0,0);
     }

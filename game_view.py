@@ -86,6 +86,13 @@ class GameView(ui.RootElement):
         #Make a big background. Making it large lets opengl take care of the texture coordinates
         #TODO: tie this in with the size of the map
         self.background = Background('tile')
+        self.water_buffer = drawing.TriangleBuffer(1024)
+
+        #try a test triangle
+        self.test_triangle = drawing.Triangle(self.water_buffer)
+        self.test_triangle.SetVertices( Point(0,0), Point(100,0), Point(0,100), 10 )
+        self.test_triangle.SetColour( (0.3,0.3,1,0.8) )
+
 
         self.game_over = False
         self.mouse_world = Point(0,0)
@@ -131,6 +138,9 @@ class GameView(ui.RootElement):
         drawing.Translate(-self.viewpos.pos.x,-self.viewpos.pos.y,0)
         drawing.Scale(globals.scale.x, globals.scale.y, 1)
         drawing.DrawAll(globals.quad_buffer,self.atlas.texture)
+        #glEnable(GL_BLEND);
+        #glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        #drawing.DrawNoTexture(self.water_buffer)
 
         #drawing.DrawAll(globals.nonstatic_text_buffer,globals.text_manager.atlas.texture)
 
