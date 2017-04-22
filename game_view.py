@@ -101,18 +101,22 @@ class GameView(ui.RootElement):
                                globals.screen_abs - Point(0,0),
                                0)
 
-        self.test_light = actors.Light(Point(100,100))
+        self.room_lights = []
+        for i in xrange(10):
+            light = actors.Light(Point(i*150,150))
+            self.room_lights.append(light)
 
         self.timeofday = TimeOfDay(0.3)
         self.mode = modes.GameMode(self)
         self.StartMusic()
-        self.fixed_light = actors.FixedLight( Point(11,38),Point(26,9) )
+        #self.fixed_light = actors.FixedLight( Point(11,38),Point(26,9) )
         self.text_colour = (0,1,0,1)
 
         #self.map = GameMap('level1.txt',self)
         self.mode = modes.GameMode(self)
         #self.map.world_size = self.map.size * globals.tile_dimensions
-        self.boat = actors.Boat(Point(100,50))
+        self.boat = actors.Boat(Point(globals.screen.x / 2 - actors.Boat.width/(globals.scale.x*2),50))
+        self.boat.move_speed = Point(1,0)
 
     def StartMusic(self):
         return
@@ -125,7 +129,7 @@ class GameView(ui.RootElement):
     def Draw(self):
         drawing.ResetState()
         drawing.Translate(-self.viewpos.pos.x,-self.viewpos.pos.y,0)
-
+        drawing.Scale(globals.scale.x, globals.scale.y, 1)
         drawing.DrawAll(globals.quad_buffer,self.atlas.texture)
 
         #drawing.DrawAll(globals.nonstatic_text_buffer,globals.text_manager.atlas.texture)
@@ -138,6 +142,9 @@ class GameView(ui.RootElement):
             return
 
         self.t = t
+        self.boat.Update(t)
+
+        self.viewpos.pos.x = self.boat.pos.x - globals.screen_showing.x/2
 
         globals.mouse_world = self.viewpos.pos + self.mouse_pos
 

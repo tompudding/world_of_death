@@ -179,8 +179,8 @@ class State(object):
         self.shader = shader
 
     def Reset(self):
-        self.pos = Point(0,0)
-        self.scale = Point(1,1)
+        self.pos = Point(0,0).to_float()
+        self.scale = Point(1,1).to_float()
         self.Update()
 
     def Update(self,pos = None, scale = None):
@@ -357,7 +357,7 @@ def EndFrameGameMode():
     quad_buffer = globals.shadow_quadbuffer
     glEnableVertexAttribArray( shadow_shader.locations.vertex_data );
     glVertexAttribPointer( shadow_shader.locations.vertex_data, 3, GL_FLOAT, GL_FALSE, 0, quad_buffer.vertex_data )
-    #glDrawElements(GL_QUADS,4,GL_UNSIGNED_INT,quad_buffer.indices)
+    glDrawElements(GL_QUADS,4,GL_UNSIGNED_INT,quad_buffer.indices)
 
     #Now do the other lights with shadows
     for light in itertools.chain(globals.lights,globals.cone_lights):
@@ -381,10 +381,10 @@ def EndFrameGameMode():
 
     #Hack, do the mouse light separate for now so we can set it's position. Should be done elsewhere really and be in
     #the lights list
-    Scale(globals.scale.x,globals.scale.y,1)
+    #Scale(globals.scale.x,globals.scale.y,1)
     glUniform1i(light_shader.locations.light_type, 2)
     glUniform1i(light_shader.locations.shadow_index, 0)
-    glUniform3f(light_shader.locations.light_pos, globals.mouse_screen.x, globals.mouse_screen.y,20)
+    glUniform3f(light_shader.locations.light_pos, globals.mouse_screen.x, globals.mouse_screen.y,120)
     glUniform3f(light_shader.locations.light_colour, 1,1,1)
     glUniform1f(light_shader.locations.cone_dir, 0)
     glUniform1f(light_shader.locations.cone_width, 7)
@@ -423,11 +423,12 @@ def EndFrameGameMode():
 
     Scale(globals.scale.x,globals.scale.y,1)
     Translate(-globals.game_view.viewpos.pos.x,-globals.game_view.viewpos.pos.y,0)
+
     glUniform1i(light_shader.locations.light_type, 2)
     for light in globals.lights:
         if not light.on:
             continue
-        print 'Doing light',light.screen_pos,light.radius,light.colour,light.quad.vertex[:4],ambient_attenuation
+
         glUniform1i(light_shader.locations.shadow_index, light.shadow_index)
         glUniform3f(light_shader.locations.light_pos, *light.screen_pos)
         glUniform3f(light_shader.locations.light_colour, *light.colour)

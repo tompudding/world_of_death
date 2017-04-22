@@ -18,6 +18,7 @@ class Actor(object):
     width   = None
     height  = None
     initial_health = 100
+    max_square_speed = 10
     def __init__(self,pos):
         self.tc             = globals.atlas.TextureSpriteCoords('%s.png' % self.texture)
         self.quad           = drawing.Quad(globals.quad_buffer,tc = self.tc)
@@ -26,7 +27,9 @@ class Actor(object):
         #that's a weird order
         self.corners = [self.corners[2],self.corners[1],self.corners[0],self.corners[3]]
         self.corners        = [p*0.5 for p in self.corners]
-        self.corners_polar  = [(p.length(),((1+i*2)*math.pi)/4) for i,p in enumerate(self.corners)]
+        #self.corners_polar  = [(p.length(),((1+i*2)*math.pi)/4) for i,p in enumerate(self.corners)]
+        self.polar_offsets = [cmath.polar(p.x+p.y*1j)[1] for p in self.corners]
+        print self.polar_offsets
         self.radius_square  = (self.size.x/2)**2 + (self.size.y/2)**2
         self.radius         = math.sqrt(self.radius_square)
         self.corners_euclid = [p for p in self.corners]
@@ -40,7 +43,9 @@ class Actor(object):
         self.health = self.initial_health
         self.interacting = None
         self.SetPos(pos)
-        self.set_angle(3*math.pi/2)
+
+        self.set_angle(0)
+
         self.hand_offset = Point(0,self.size.y*1.1)
         self.track_quads = []
         self.last_track = 0
@@ -69,14 +74,14 @@ class Actor(object):
     def SetPos(self,pos):
         self.pos = pos
 
-        self.vertices = [((pos + corner)).to_int() for corner in self.corners_euclid]
+        self.vertices = [((pos + corner)) for corner in self.corners_euclid]
 
-        bl = pos
-        tr = bl + self.size
-        bl = bl.to_int()
-        tr = tr.to_int()
+        #bl = pos
+        #tr = bl + self.size
+        #bl = bl.to_int()
+        #tr = tr.to_int()
         #self.quad.SetVertices(bl,tr,4)
-        print self.vertices
+
         self.quad.SetAllVertices(self.vertices, 4)
 
     def TriggerCollide(self,other):
@@ -84,7 +89,7 @@ class Actor(object):
 
     def set_angle(self, angle):
         self.angle = angle%(2*math.pi)
-        self.corners_polar  = [(p.length(),self.angle + ((1+i*2)*math.pi)/4) for i,p in enumerate(self.corners)]
+        self.corners_polar  = [(p.length(),self.angle + self.polar_offsets[i]) for i,p in enumerate(self.corners)]
         cnums = [cmath.rect(r,a) for (r,a) in self.corners_polar]
         self.corners_euclid = [Point(c.real,c.imag) for c in cnums]
 
@@ -95,6 +100,7 @@ class Actor(object):
         return self.pos + self.hand_offset.Rotate(self.angle)
 
     def Move(self,t):
+
         if self.last_update == None:
             self.last_update = globals.time
             return
@@ -102,9 +108,7 @@ class Actor(object):
         self.last_update = globals.time
 
         angle_change = self.angle_speed*elapsed
-        if 0 != self.required_turn:
-            self.turned += abs(angle_change)
-        self.set_angle(self.angle + angle_change)
+        #self.set_angle(self.angle + angle_change)
 
         self.move_speed += self.move_direction.Rotate(self.angle)*elapsed
         if self.move_speed.SquareLength() > self.max_square_speed:
@@ -116,6 +120,7 @@ class Actor(object):
         amount = self.move_speed * elapsed
 
         self.SetPos(self.pos + amount)
+        #self.SetPos(self.pos)
 
     def GetPos(self):
         return self.pos
@@ -177,13 +182,13 @@ class NonShadowLight(Light):
         globals.non_shadow_lights.append(self)
 
 class ActorLight(object):
-    z = 6
+    z = 20
     def __init__(self,parent):
         self.parent = parent
         self.quad_buffer = drawing.QuadBuffer(4)
         self.quad = drawing.Quad(self.quad_buffer)
         self.colour = (1,1,1)
-        self.radius = 30
+        self.radius = 100
         self.intensity = 1
         self.on = True
         globals.non_shadow_lights.append(self)
@@ -291,9 +296,9 @@ class Boat(Actor):
 
     def __init__(self,pos):
         super(Boat,self).__init__(pos)
-        self.light = ActorLight(self)
+        #self.light = ActorLight(self)
 
     def Update(self,t):
 
-        super(Robot,self).Update(t)
-        self.light.Update(t)
+        super(Boat,self).Update(t)
+        #self.light.Update(t)

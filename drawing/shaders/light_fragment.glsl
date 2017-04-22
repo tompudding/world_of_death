@@ -92,7 +92,7 @@ void main()
             sum += sample(vec2(tc.x - (NUM_VALUES-i)*blur, tc.y), r) * values[i];
             sum += sample(vec2(tc.x - (i+1)*blur, tc.y), r) * values[NUM_VALUES-1-i];
         }
-        sum = 1.0;
+        //sum = 1.0;
 
         //adjust_xy.y *= 1.41;
         //todo: use a height map to get the z coord

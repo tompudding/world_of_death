@@ -17,10 +17,12 @@ def main():
         #w,h = (1600,1000)
         w,h = (1280,720)
         globals.tile_scale            = Point(1,1)
-        globals.scale                 = Point(2,2)
+        globals.scale                 = Point(3,3)
         globals.screen_abs            = Point(w,h)
         globals.music_volume = 0.1
-        globals.screen                = globals.screen_abs/globals.scale
+        #globals.screen                = globals.screen_abs/globals.scale
+        globals.screen                = globals.screen_abs
+        globals.screen_showing        = globals.screen_abs / globals.scale
         globals.screen_root           = ui.UIRoot(Point(0,0),globals.screen_abs)
         globals.mouse_screen          = Point(0,0)
         globals.lights                = []
