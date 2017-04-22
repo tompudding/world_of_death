@@ -78,17 +78,36 @@ class Background(object):
                 quad.SetVertices(bl,tr,0)
 
 class Spring(object):
+    k = 0.03
+    damping = 0.0025
     def __init__(self, x, y):
+        self.target_height = y
+
         self.bottom = Point(x, 0)
         self.top = Point(x, y)
 
+        self.velocity = 0
+
+    def Update(self, elapsed):
+
+        diff = self.top.y - self.target_height
+        acc = -self.k * diff
+
+        self.velocity += (acc * elapsed)
+        #self.velocity -= self.velocity * self.damping * elapsed
+        self.top.y += (self.velocity * elapsed)
+
+
 class Trapezoid(object):
+    dark = (0, 0.2, 0.4, 0.9)
+    light = (0.2, 0.5, 1, 0.8)
+    colours = [ (dark, light, dark), (light, light, dark) ]
     def __init__(self, buf, left_spring, right_spring):
         self.triangles = [drawing.Triangle(buf) for i in xrange(2)]
         self.left_spring = left_spring
         self.right_spring = right_spring
-        for t in self.triangles:
-            t.SetColour((0.3,0.3,1,0.8))
+        for i,t in enumerate(self.triangles):
+            t.SetColours( self.colours[i] )
         self.set_vertices()
 
     def set_vertices(self):
@@ -96,18 +115,19 @@ class Trapezoid(object):
                                        self.left_spring.top,
                                        self.right_spring.bottom, 10 )
         self.triangles[1].SetVertices( self.left_spring.top,
-                                       self.right_spring.bottom,
-                                       self.right_spring.top, 10 )
+                                       self.right_spring.top,
+                                       self.right_spring.bottom, 10 )
 
 class Water(object):
+    spread = 0.05
     def __init__(self):
         spacing = 10
         num_springs = globals.screen_showing.x*3 / spacing
         #num_springs = 2
         self.springs = [Spring(i*spacing, 40) for i in xrange(num_springs)]
 
-
         self.buffer = drawing.TriangleBuffer(3*(num_springs-1)*2)
+        self.last_update = None
 
         #try a test triangle
         self.trapezoids = []
@@ -121,10 +141,41 @@ class Water(object):
         #start a little wave as a test
         print num_springs
         #for i in xrange(30):
-        self.springs[45].top.y = 20
+        #self.springs[45].top.y = 10
 
 
     def Update(self):
+        if self.last_update is None:
+            self.last_update = globals.time
+            return
+
+        elapsed = (globals.time - self.last_update) * globals.time_step
+        self.last_update = globals.time
+
+        l_deltas = [0 for i in xrange(len(self.springs))]
+        r_deltas = [0 for i in xrange(len(self.springs))]
+
+        for spring in self.springs:
+            spring.Update(elapsed)
+
+        #print elapsed,self.springs[45].top.y, self.springs[45].velocity
+
+        #pull on each other
+        for i in xrange(8):
+            for j in xrange(len(self.springs)):
+                if j > 0:
+                    l_deltas[j] = self.spread * (self.springs[j].top.y - self.springs[j-1].top.y)
+                    self.springs[j - 1].velocity += (l_deltas[j]*elapsed)
+                if j < len(self.springs) - 1:
+                    r_deltas[j] = self.spread * (self.springs[j].top.y - self.springs[j+1].top.y)
+                    self.springs[j + 1].velocity += (r_deltas[j]*elapsed)
+
+            for j in xrange(len(self.springs)):
+                if j > 0:
+                    self.springs[j - 1].top.y += l_deltas[j] * elapsed
+                if j < len(self.springs) - 1:
+                    self.springs[j + 1].top.y += r_deltas[j] * elapsed
+
         for trap in self.trapezoids:
             trap.set_vertices()
 
@@ -234,6 +285,7 @@ class GameView(ui.RootElement):
         return super(GameView,self).MouseMotion(pos,rel,handled)
 
     def MouseButtonDown(self,pos,button):
+        self.water.springs[int(globals.mouse_world.x/10)].velocity += 10
         if self.mode:
             pos = self.viewpos.pos + pos
             return self.mode.MouseButtonDown(pos,button)

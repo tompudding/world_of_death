@@ -221,9 +221,12 @@ class Shape(object):
     def SetColours(self,colours):
         if self.deleted:
             return
-        for current,target in zip(self.colour,colours):
-            for i in xrange(self.num_points):
-                current[i] = target[i]
+        for i in xrange(self.num_points):
+            for j in xrange(4):
+                self.colour[i][j] = colours[i][j]
+        #for current,target in zip(self.colour,colours):
+        #    for i in xrange(self.num_points):
+        #        current[i] = target[i]
 
     def SetTextureCoordinates(self,tc):
         self.tc[0:self.num_points] = tc
