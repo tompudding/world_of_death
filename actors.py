@@ -140,7 +140,12 @@ class Actor(object):
             #print other.pos,'near',self.pos
             if isinstance(other,Player):
                 #handle this separate
+                p = self.pos + amount
+                probe = p + ((other.pos - p).unit_vector()*self.radius)
+                if other.is_inside(probe):
+                    self.kill()
                 continue
+
 
             #All these mobile things are helpfull just little spheres, so collision detection is easy
             distance = other.pos - (self.pos + amount)
@@ -154,6 +159,9 @@ class Actor(object):
                 overlap = self.radius + other.radius - distance.length()
                 adjust = distance.unit_vector()*-overlap
                 amount += adjust*0.1
+
+        #if globals.game_view.boat.is_inside(self.pos):
+        #    print 'hit boat!'
 
         self.SetPos(self.pos + amount)
         #self.SetPos(self.pos)
@@ -326,11 +334,28 @@ class Torch(ConeLight):
         self.quad.SetVertices(bl,tr,4)
         #self.quad.SetAllVertices(self.parent.vertices, 0)
 
-class Player(Actor):
+class SquareActor(Actor):
+    collide_centre = Point(0,0)
+    def is_inside(self, p):
+        #first need to rotate the point so we can do the test
+        diff = (p - self.pos).Rotate(-self.angle)
+        new_p = self.pos + diff
+        bl = self.pos + self.collide_centre - self.collide_size/2
+        tr = bl + self.collide_size
+
+        if new_p.x >= bl.x and new_p.x < tr.x:
+            if new_p.y >= bl.y and new_p.y < tr.y:
+                return True
+        return False
+
+
+class Player(SquareActor):
     texture = 'guy_pipe'
     width = 32
-    height = 37
-    boat_offset = Point(24,20)
+    height = 48
+    boat_offset = Point(24,9)
+    collide_size = Point(12,24.5).to_float()
+    collide_centre = Point(-1,-4)
     def __init__(self, boat):
         self.boat = boat
         super(Player,self).__init__(self.boat.pos + self.boat_offset)
@@ -338,18 +363,22 @@ class Player(Actor):
     def Update(self,t):
         self.SetPos(self.boat.pos + self.boat_offset)
 
-class Boat(Actor):
+class Boat(SquareActor):
     texture = 'boat'
     width = 108
     height = 27
     water_height = 9
     max_speed = 3
     max_square_speed = max_speed**2
+    collide_centre = Point(0,-8)
+    collide_size = Point(width,height-8)
 
     def __init__(self,pos,water):
         self.water = water
         super(Boat,self).__init__(Point(pos.x, pos.y + self.water_height))
         #self.light = ActorLight(self)
+        #self.SetPos(self.pos)
+        #self.Update(0)
 
     def remove_from_map(self):
         pass
@@ -430,6 +459,12 @@ class Critter(Actor):
         self.jumping = False
         self.splashed = False
 
+    def kill(self):
+        globals.aabb.remove(self)
+        self.quad.Disable()
+        self.quad.Delete()
+        self.dead = True
+
     def Update(self,t):
         #self.light.Update(t)
         boat = globals.game_view.boat
@@ -445,9 +480,7 @@ class Critter(Actor):
                     #print 'ended at',globals.time,boat.pos.x,self.pos.x
 
             if self.pos.y < 0:
-                self.quad.Disable()
-                self.quad.Delete()
-                self.dead = True
+                self.kill()
 
         if self.start_jump is None:
             distance = player.pos.x - self.pos.x
@@ -461,13 +494,16 @@ class Critter(Actor):
             fall_distance = -(self.pos.y - player.pos.y)
             start_speed_y = random.random()*10
             a = gravity
-            if fall_distance < 0:
-                fall_time = -1
-            else:
+            try:
                 fall_time = (math.sqrt(start_speed_y**2 + 2*a*fall_distance) - start_speed_y) / a
+            except ValueError:
+                fall_time = -1
             x = (-math.sqrt(start_speed_y**2 + 2*a*fall_distance) - start_speed_y) / a
 
             fall_time = max(fall_time,x)/globals.time_step
+
+            #Their estimate of the fall time should not be perfect
+            fall_time = 0.7*fall_time + 0.3*fall_time*random.random()
 
             #print 'guess at',globals.time + fall_time
             #What position will the boat be in at that time?
@@ -479,6 +515,7 @@ class Critter(Actor):
             self.move_direction = Point(0,gravity)
 
             #s = ut + 1/2*a*t*t =>
+            start_speed_y = start_speed_y * 0.8 + random.random() * start_speed_y * 0.2
 
             self.move_speed = Point(distance/(fall_time*globals.time_step),start_speed_y)
             self.jumping = True

@@ -1,4 +1,4 @@
 resource/sprites/boat.png:resource/tiles_atlas_0.png:0:101.0:108:27
-resource/sprites/guy_pipe.png:resource/tiles_atlas_0.png:0:64.0:32:37
+resource/sprites/guy_pipe.png:resource/tiles_atlas_0.png:0:53.0:32:48
 resource/sprites/tile.png:resource/tiles_atlas_0.png:32:69.0:32:32
 resource/sprites/basic_critter.png:resource/tiles_atlas_0.png:108:112.0:16:16

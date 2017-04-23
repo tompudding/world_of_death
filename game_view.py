@@ -262,11 +262,13 @@ class AxisAlignedBoundingBoxes(object):
     def nearby(self, actor):
         #return all the actors that share locations with the given actor
         if actor not in self.locations_per_actor:
-            return
+            return []
+        out = []
         for x,y in self.locations_per_actor[actor]:
             for other in self.grid[x][y].actors:
                 if other is not actor:
-                    yield other
+                    out.append(other)
+        return out
 
 class GameView(ui.RootElement):
     water_height = 40
@@ -317,9 +319,9 @@ class GameView(ui.RootElement):
         self.player = actors.Player(self.boat)
 
         self.critters = []
-        for i in xrange(10):
-            x = 200 + random.random()*600
-            y = 60 + random.random()*240
+        for i in xrange(5):
+            x = 200 + random.random()*500
+            y = 60 + random.random()*180
             self.critters.append(actors.Critter(Point(x,y)))
 
     def StartMusic(self):
@@ -354,7 +356,7 @@ class GameView(ui.RootElement):
         self.boat.Update(t)
         self.player.Update(t)
         for critter in self.critters:
-            critter.Update(t)
+           critter.Update(t)
         self.critters = [critter for critter in self.critters if not critter.dead]
 
         self.viewpos.pos.x = self.boat.pos.x - globals.screen_showing.x/2
@@ -367,6 +369,7 @@ class GameView(ui.RootElement):
             self.room_lights[-1].set_pos( Point(self.lights_start + (len(self.room_lights)-1)*self.light_spacing,self.light_height) )
 
         globals.mouse_world = self.viewpos.pos + self.mouse_pos
+        #print globals.mouse_world, self.boat.is_inside(globals.mouse_world)
 
     def GameOver(self):
         self.game_over = True
