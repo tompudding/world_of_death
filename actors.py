@@ -159,7 +159,7 @@ class Actor(object):
                 continue
 
             if other.bounce:
-                if globals.time > self.bounce_allowed:
+                if other.up and globals.time > self.bounce_allowed:
                     #we should bounce off this
                     p = self.pos + amount
                     diff = other.pos - p
@@ -435,6 +435,17 @@ class Player(SquareActor):
 
     def Update(self,t):
 
+        if self.target_status != self.status:
+            #we want to change!
+            if globals.time > self.brolly_change_time:
+                self.status = self.target_status
+                if self.status == Player.Status.BROLLY_UP:
+                    self.brolly.put_up()
+                else:
+                    self.brolly.put_down()
+
+                self.quad.SetTextureCoordinates(self.tc[self.status][self.dir])
+
         diff = globals.mouse_world - (self.boat.pos + self.approx_boat_offset)
         r,a = cmath.polar(diff.x + diff.y*1j)
         a += math.pi*1.5
@@ -452,17 +463,6 @@ class Player(SquareActor):
 
         self.SetPos(self.boat.pos + self.boat_offset)
         self.brolly.Update(t,a)
-
-        if self.target_status != self.status:
-            #we want to change!
-            if globals.time > self.brolly_change_time:
-                self.status = self.target_status
-                if self.status == Player.Status.BROLLY_UP:
-                    self.brolly.put_up()
-                else:
-                    self.brolly.put_down()
-
-                self.quad.SetTextureCoordinates(self.tc[self.status][self.dir])
 
     def put_brolly_up(self):
         if self.status == Player.Status.BROLLY_UP:
