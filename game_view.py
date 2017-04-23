@@ -325,10 +325,19 @@ class GameView(ui.RootElement):
         self.player = actors.Player(self.boat)
 
         self.critters = []
-        for i in xrange(10):
-            x = 400 + random.random()*500
-            y = 60 + random.random()*180
-            self.critters.append(actors.Critter(Point(x,y)))
+        #generate randomly for ther region 500 -> 1500
+        for i in xrange(20):
+
+            x = 500 + random.random()*1000
+            y = 120 + random.random()*120
+            pos = Point(x,y)
+            while any( ((pos - critter.pos).length() < 20) for critter in self.critters):
+                print 'skipping critter at',pos
+                x = 500 + random.random()*1000
+                y = 120 + random.random()*120
+                pos = Point(x,y)
+            print 'chose critter',pos
+            self.critters.append(actors.Critter(pos))
 
     def StartMusic(self):
         return

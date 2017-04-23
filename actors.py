@@ -477,8 +477,8 @@ class Player(SquareActor):
     collide_centre = [Point(-2,0),Point(4,0)]
     approx_boat_offset = Point(20,13)
     is_player = True
-    brolly_up_time = 200
-    brolly_down_time = 300
+    brolly_up_time = 100
+    brolly_down_time = 100
     brolly_swing_time = 400
 
     class Status:
@@ -554,6 +554,8 @@ class Player(SquareActor):
 
     def put_brolly_down(self):
         if self.status != Player.Status.BROLLY_UP:
+            if self.target_status != Player.Status.BROLLY_DOWN:
+                self.target_status = Player.Status.BROLLY_DOWN
             return
         #we've currently got it down but we want it up
         if self.target_status == Player.Status.BROLLY_DOWN:
@@ -671,7 +673,7 @@ class Critter(Actor):
         super(Critter,self).__init__(pos)
         #self.light = ActorLight(self)
         self.activation_length = 2000 + random.random() * 3000
-        self.activation_distance = 150 + 200 * random.random()
+        self.activation_distance = 50 + 150 * random.random()
         self.start_jump = None
         self.jumping = False
         self.splashed = False
@@ -691,10 +693,12 @@ class Critter(Actor):
             if not self.on_boat:
                 self.Move(t)
                 if boat.is_inside(self.pos):
+                    globals.game_view.water.jiggle(self.pos.x, self.move_speed.y/4)
                     self.on_boat = True
                     self.boat_offset = self.pos - boat.pos
                     self.move_speed = Point( ((player.pos - self.pos).unit_vector() * 2).x,0)
                     self.move_direction = Point(0,0)
+
                     self.splashed = True
             else:
                 #We're on the boat!
