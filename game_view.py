@@ -156,7 +156,6 @@ class Water(object):
 
     def jiggle(self, x, amount):
         n = int((x - self.left)/self.spacing)
-        print 'jiggle at',x,n,len(self.trapezoids)
         try:
             self.springs[n].velocity += amount
         except IndexError:
@@ -347,6 +346,8 @@ class GameView(ui.RootElement):
             self.critters.append(actors.Critter(pos))
 
         self.critters.append(actors.BowCritter(Point(400,120)))
+        for i in xrange(10):
+            self.critters.append(actors.RockCritter(Point(600+i*16,120)))
         self.arrows = []
 
     def StartMusic(self):

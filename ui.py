@@ -1335,7 +1335,6 @@ class Hearts(Box):
         full_bl = self.absolute.bottom_left
         full_size = Point(self.absolute.size.x * health, self.absolute.size.y)
         full_tr = full_bl + full_size
-        print full_bl + full_size, self.absolute.top_right
         self.full_quad.SetVertices(full_bl,
                                    full_tr,
                                    self.level + self.extra_level)
@@ -1358,7 +1357,6 @@ class Hearts(Box):
         new_x = new_tc[1][0] + tc_x*(health)
         new_tc[0] = [new_x,new_tc[0][1]]
         new_tc[1] = [new_x,new_tc[1][1]]
-        print new_tc, self.empty_tc
 
         self.empty_quad.SetTextureCoordinates( new_tc )
 
