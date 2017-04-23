@@ -295,6 +295,12 @@ class GameView(ui.RootElement):
                                         full_tc = globals.ui_atlas.TextureUiCoords('hearts_full.png'),
                                         empty_tc = globals.ui_atlas.TextureUiCoords('hearts_empty.png'),
                                         buffer = globals.screen_texture_buffer)
+        self.tutorial_text = ui.TextBox(parent = globals.screen_root,
+                                        bl = Point(0.6,0),
+                                        tr = Point(1.0,0.15),
+                                        text = 'Welcome! Please keep your hands inside the boat at all times. Don\'t for instance press the left mouse button to swing your brolly',
+                                        colour = (1,1,1,1),
+                                        scale = 6)
 
 
         self.game_over = False
@@ -317,7 +323,7 @@ class GameView(ui.RootElement):
             light = actors.Light(Point(i*self.light_spacing,self.light_height))
             self.room_lights.append(light)
 
-        self.timeofday = TimeOfDay(0.3)
+        self.timeofday = TimeOfDay(0.5)
         self.mode = modes.GameMode(self)
         self.StartMusic()
         #self.fixed_light = actors.FixedLight( Point(11,38),Point(26,9) )
@@ -327,10 +333,18 @@ class GameView(ui.RootElement):
         self.mode = modes.GameMode(self)
         #self.map.world_size = self.map.size * globals.tile_dimensions
         self.boat = actors.Boat(Point(globals.screen_showing.x /2 ,self.water_height), self.water)
-        self.boat.move_direction = Point(0.2,0)
+        self.boat.move_direction = Point(0.7,0)
         self.player = actors.Player(self.boat)
 
         self.critters = []
+        self.arrows = []
+        self.tutorial = self.tutorial_swing_brolly
+        self.water_critters = []
+        self.water_range = None
+        self.flicker_start = None
+        self.last_flicker_period = 0
+
+        return
         #generate randomly for ther region 500 -> 1500
         for i in xrange(20):
 
@@ -348,7 +362,21 @@ class GameView(ui.RootElement):
         self.critters.append(actors.BowCritter(Point(400,120)))
         for i in xrange(10):
             self.critters.append(actors.RockCritter(Point(600+i*16,120)))
-        self.arrows = []
+
+    def tutorial_swing_brolly(self):
+        self.tutorial_text.SetText('Oh my, please dont do that sir. In fact it may get wet soon so you\'ll need to open your brolly with the right mouse button ')
+        self.water_range = self.viewpos.pos.x + globals.screen_showing.x
+        space = 4
+        for i in xrange(20):
+            critter = actors.DropCritter(Point(self.water_range+i*space,globals.screen_showing.y + 10))
+            self.critters.append(critter)
+            self.water_critters.append(critter)
+        self.water_range += space*len(self.water_critters)
+        self.tutorial = self.tutorial_open_brolly
+
+    def tutorial_open_brolly(self):
+        self.tutorial_text.SetText(' ')
+        self.tutorial = False
 
     def StartMusic(self):
         return
@@ -377,6 +405,35 @@ class GameView(ui.RootElement):
         if self.game_over:
             return
 
+        if self.flicker_start:
+            if globals.time > self.flicker_end:
+                #we're done
+                self.timeofday.Set(0.3)
+                for light in globals.lights:
+                    light.on = True
+                self.flicker_start = None
+            else:
+                period = (globals.time - self.flicker_start) / 400
+                if period != self.last_flicker_period:
+                    self.last_flicker_period = period
+                    for light in globals.lights:
+                        light.on = random.random() < 0.3
+                    self.timeofday.Set(random.choice((0,0.28)))
+
+        if self.water_range and self.water_range < self.viewpos.pos.x:
+            for c in self.water_critters:
+                c.kill()
+            self.water_critters = []
+            self.water_range = None
+            self.tutorial_text.SetText('It\'s ... a .. Smmmaaaaallll')
+            self.boat.move_direction = Point(0.2,0)
+            for light in globals.lights:
+                light.on = False
+                self.timeofday.Set(0.0)
+                self.flicker_start = globals.time
+                self.flicker_end = globals.time + 4000
+            self.prepare_level_one()
+
         self.t = t
         self.water.Update()
         self.boat.Update(t)
@@ -402,6 +459,21 @@ class GameView(ui.RootElement):
         #print globals.mouse_world, self.player.is_inside(globals.mouse_world)
         #print 'mw:',globals.mouse_world
 
+    def prepare_level_one(self):
+        #Put in some sparse basic baddies
+        self.current_level = 1
+        x_0 = self.viewpos.pos.x + globals.screen_showing.x
+        for i in xrange(10):
+            x = x_0 + random.random()*1000
+            y = 120 + random.random()*120
+            pos = Point(x,y)
+            while any( ((pos - critter.pos).length() < 20) for critter in self.critters):
+                #print 'skipping critter at',pos
+                x = x_0 + random.random()*1000
+                y = 120 + random.random()*120
+                pos = Point(x,y)
+            #print 'chose critter',pos
+            self.critters.append(actors.Critter(pos))
     def GameOver(self):
         self.game_over = True
         self.mode = modes.GameOver(self)

@@ -495,6 +495,9 @@ class Player(SquareActor):
             if globals.time > self.brolly_change_time:
 
                 if self.target_status == Player.Status.BROLLY_UP:
+                    if globals.game_view.tutorial == globals.game_view.tutorial_open_brolly:
+                        globals.game_view.tutorial()
+                        pass
                     self.brolly.put_up()
                 elif self.target_status == Player.Status.BROLLY_DOWN:
                     self.brolly.put_down()
@@ -564,6 +567,9 @@ class Player(SquareActor):
         self.target_status = Player.Status.BROLLY_DOWN
         self.brolly_change_time = globals.time + self.brolly_swing_time
         self.brolly.start_murder()
+        print globals.game_view.tutorial == globals.game_view.tutorial_swing_brolly
+        if globals.game_view.tutorial == globals.game_view.tutorial_swing_brolly:
+            globals.game_view.tutorial()
         #At this point we can kill anything snacking on us
         for critter in self.snackers:
             critter.kill()
@@ -988,6 +994,7 @@ class Drop(Actor):
     max_life = 10000
     max_square_speed = max_speed**2
     damage_amount = 0
+    jiggle_amount = 0.04
 
     def __init__(self, parent, pos, dir, speed):
 
@@ -1024,7 +1031,7 @@ class Drop(Actor):
         if not self.splashed and self.pos.y < 60:
             water_height = globals.game_view.water.get_height(self.pos.x)
             if abs(self.pos.y - water_height) < 10:
-                globals.game_view.water.jiggle(self.pos.x, self.move_speed.y*0.1)
+                globals.game_view.water.jiggle(self.pos.x, self.move_speed.y*self.jiggle_amount)
                 self.splashed = True
 
         if self.pos.y < 0:
@@ -1081,6 +1088,7 @@ class BowCritter(Critter):
 
 class RockCritter(Critter):
     fire_cooldown = 1000
+    object_class = Rock
 
     def __init__(self, pos):
         super(RockCritter, self).__init__(pos)
@@ -1104,8 +1112,11 @@ class RockCritter(Critter):
         if globals.time > self.fire_time:
             #We just drop a rock
 
-            rock = Rock(self, pos=self.pos, dir = Point(0,-1), speed = Point(0,0))
+            rock = self.object_class(self, pos=self.pos, dir = Point(0,-1), speed = Point(0,0))
             globals.game_view.arrows.append(rock)
             self.fire_time = globals.time + self.fire_cooldown
 
 
+class DropCritter(RockCritter):
+    object_class = Drop
+    fire_cooldown = 1000
