@@ -402,6 +402,8 @@ class GameView(ui.RootElement):
     def MouseButtonDown(self,pos,button):
         if button == 3:
             self.player.put_brolly_up()
+        elif button == 1:
+            self.player.prepare_brolly_swing()
         else:
             self.water.jiggle(globals.mouse_world.x, -10)
 
@@ -414,6 +416,8 @@ class GameView(ui.RootElement):
     def MouseButtonUp(self,pos,button):
         if button == 3:
             self.player.put_brolly_down()
+        elif button == 1:
+            self.player.swing_brolly()
         if self.mode:
             pos = self.viewpos.pos + pos
             return self.mode.MouseButtonUp(pos,button)

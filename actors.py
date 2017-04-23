@@ -23,6 +23,7 @@ class Actor(object):
     initial_health = 100
     is_player = False
     bounce = False
+    level = 4
 
     max_speed = 3
     max_square_speed = max_speed**2
@@ -101,7 +102,7 @@ class Actor(object):
         #tr = tr.to_int()
         #self.quad.SetVertices(bl,tr,4)
 
-        self.quad.SetAllVertices(self.vertices, 4)
+        self.quad.SetAllVertices(self.vertices, self.level)
         self.add_to_map()
 
     def TriggerCollide(self,other):
@@ -375,29 +376,47 @@ class SquareActor(Actor):
 
 class Brolly(SquareActor):
     texture = 'brolly_open'
-    arm_offset = [Point(-4,6),Point(2,6)]
+    arm_offset = [Point(-4,4),Point(3,4)]
     width = 31
     height = 37
     collide_centre = Point(0,12)
     collide_size = Point(31,12)
-    rotate_centre = Point(0,17)
+    rotate_centre = Point(0,18)
     bounce = True
+
     def __init__(self, person):
         self.person = person
         super(Brolly,self).__init__(self.person.pos + self.arm_offset[Dirs.RIGHT])
+        self.swinging = False
+        self.open_tc = self.tc
+        self.closed_tc = globals.atlas.TextureSpriteCoords('brolly_closed.png')
+        self.tc = self.closed_tc
 
     def put_up(self):
         self.up = True
+        self.quad.SetTextureCoordinates(self.open_tc)
         self.quad.Enable()
+        self.level = 3.5
 
     def put_down(self):
         self.up = False
         self.quad.Disable()
 
+    def prepare_swing(self):
+        self.swinging = True
+        self.quad.SetTextureCoordinates(self.closed_tc)
+        self.quad.Enable()
+        self.level = 5
+
+    def finish_swinging(self):
+        self.swinging = False
+        self.quad.Disable()
+
     def Update(self,t,angle_to_mouse):
-        if not self.up:
-            return
-        self.set_angle(angle_to_mouse)
+        if self.up:
+            self.set_angle(angle_to_mouse)
+        elif self.swinging:
+            self.set_angle(angle_to_mouse + math.pi)
         #we also want to move it such that the arm thing stays in the same place
         extra = self.rotate_centre.Rotate(self.angle)
 
@@ -415,9 +434,11 @@ class Player(SquareActor):
     is_player = True
     brolly_up_time = 200
     brolly_down_time = 500
+
     class Status:
         BROLLY_UP = 0
         BROLLY_DOWN = 1
+        BROLLY_SWING = 2
 
     def __init__(self, boat):
         self.boat = boat
@@ -426,9 +447,13 @@ class Player(SquareActor):
 
         tc_brolly = globals.atlas.TextureSpriteCoords('guy_nothing.png')
         tc_brolly_left = [tc_brolly[i] for i in (3,2,1,0)]
+        tc_brolly_swing = globals.atlas.TextureSpriteCoords('guy_swing.png')
+        tc_brolly_swing_left = [tc_brolly_swing[i] for i in (3,2,1,0)]
         self.status = Player.Status.BROLLY_DOWN
         self.target_status = self.status
-        self.tc = [ [tc_brolly,tc_brolly_left],[self.tc, self.tc_left] ]
+        self.tc = { Player.Status.BROLLY_UP    : [tc_brolly,tc_brolly_left],
+                    Player.Status.BROLLY_DOWN  : [self.tc, self.tc_left],
+                    Player.Status.BROLLY_SWING : [tc_brolly_swing,tc_brolly_swing_left] }
 
         self.brolly = Brolly(self)
         self.brolly.put_down()
@@ -465,7 +490,7 @@ class Player(SquareActor):
         self.brolly.Update(t,a)
 
     def put_brolly_up(self):
-        if self.status == Player.Status.BROLLY_UP:
+        if self.status != Player.Status.BROLLY_DOWN:
             return
         #we've currently got it down but we want it up
         if self.target_status == Player.Status.BROLLY_UP:
@@ -483,7 +508,7 @@ class Player(SquareActor):
         # self.status = Player.Status.BROLLY_DOWN
         # self.brolly.put_down()
         # self.quad.SetTextureCoordinates(self.tc[self.status][self.dir])
-        if self.status == Player.Status.BROLLY_DOWN:
+        if self.status != Player.Status.BROLLY_UP:
             return
         #we've currently got it down but we want it up
         if self.target_status == Player.Status.BROLLY_DOWN:
@@ -491,6 +516,22 @@ class Player(SquareActor):
             return
         self.target_status = Player.Status.BROLLY_DOWN
         self.brolly_change_time = globals.time + self.brolly_down_time
+
+    def prepare_brolly_swing(self):
+        if any((s == Player.Status.BROLLY_UP for s in (self.status, self.target_status))):
+            return
+        #Prepare
+        self.brolly.prepare_swing()
+        self.target_status = self.status = Player.Status.BROLLY_SWING
+        self.quad.SetTextureCoordinates(self.tc[self.status][self.dir])
+
+    def swing_brolly(self):
+        if self.status != Player.Status.BROLLY_SWING:
+            return
+        if self.brolly.swinging:
+            self.brolly.finish_swinging()
+        self.target_status = self.status = Player.Status.BROLLY_DOWN
+        self.quad.SetTextureCoordinates(self.tc[self.status][self.dir])
 
 class Boat(SquareActor):
     texture = 'boat'
@@ -501,7 +542,7 @@ class Boat(SquareActor):
     max_square_speed = max_speed**2
     collide_centre = Point(0,-8)
     collide_size = Point(width,height-8)
-
+    level = 6
     def __init__(self,pos,water):
         self.water = water
         super(Boat,self).__init__(Point(pos.x, pos.y + self.water_height))
