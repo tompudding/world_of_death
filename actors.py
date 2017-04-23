@@ -413,6 +413,8 @@ class Player(SquareActor):
     collide_centre = Point(-1,-4)
     approx_boat_offset = Point(20,9)
     is_player = True
+    brolly_up_time = 200
+    brolly_down_time = 500
     class Status:
         BROLLY_UP = 0
         BROLLY_DOWN = 1
@@ -425,6 +427,7 @@ class Player(SquareActor):
         tc_brolly = globals.atlas.TextureSpriteCoords('guy_nothing.png')
         tc_brolly_left = [tc_brolly[i] for i in (3,2,1,0)]
         self.status = Player.Status.BROLLY_DOWN
+        self.target_status = self.status
         self.tc = [ [tc_brolly,tc_brolly_left],[self.tc, self.tc_left] ]
 
         self.brolly = Brolly(self)
@@ -450,15 +453,44 @@ class Player(SquareActor):
         self.SetPos(self.boat.pos + self.boat_offset)
         self.brolly.Update(t,a)
 
+        if self.target_status != self.status:
+            #we want to change!
+            if globals.time > self.brolly_change_time:
+                self.status = self.target_status
+                if self.status == Player.Status.BROLLY_UP:
+                    self.brolly.put_up()
+                else:
+                    self.brolly.put_down()
+
+                self.quad.SetTextureCoordinates(self.tc[self.status][self.dir])
+
     def put_brolly_up(self):
-        self.status = Player.Status.BROLLY_UP
-        self.brolly.put_up()
-        self.quad.SetTextureCoordinates(self.tc[self.status][self.dir])
+        if self.status == Player.Status.BROLLY_UP:
+            return
+        #we've currently got it down but we want it up
+        if self.target_status == Player.Status.BROLLY_UP:
+            #we already tried to put it up in the past, this will be handled in update
+            return
+
+        #We need to record that the player wants it up
+        self.target_status = Player.Status.BROLLY_UP
+        self.brolly_change_time = globals.time + self.brolly_up_time
+
+        # self.status = Player.Status.BROLLY_UP
+
 
     def put_brolly_down(self):
-        self.status = Player.Status.BROLLY_DOWN
-        self.brolly.put_down()
-        self.quad.SetTextureCoordinates(self.tc[self.status][self.dir])
+        # self.status = Player.Status.BROLLY_DOWN
+        # self.brolly.put_down()
+        # self.quad.SetTextureCoordinates(self.tc[self.status][self.dir])
+        if self.status == Player.Status.BROLLY_DOWN:
+            return
+        #we've currently got it down but we want it up
+        if self.target_status == Player.Status.BROLLY_DOWN:
+            #we already tried to put it up in the past, this will be handled in update
+            return
+        self.target_status = Player.Status.BROLLY_DOWN
+        self.brolly_change_time = globals.time + self.brolly_down_time
 
 class Boat(SquareActor):
     texture = 'boat'
