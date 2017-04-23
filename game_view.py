@@ -212,15 +212,72 @@ class Water(object):
         #drawing.ResetState()
         drawing.DrawNoTexture(self.buffer)
 
+class BoundingBox(object):
+    def __init__(self):
+        self.actors = {}
+
+    def add(self, actor):
+        self.actors[actor] = True
+
+    def remove(self, actor):
+        try:
+            del self.actors[actor]
+        except KeyError:
+            pass
+
+class AxisAlignedBoundingBoxes(object):
+    box_size = 16
+    def __init__(self):
+        self.grid = []
+        for x in xrange(0, globals.screen_showing.x, self.box_size):
+            col = []
+            for y in xrange(0, globals.screen_showing.y, self.box_size):
+                col.append(BoundingBox())
+            self.grid.append(col)
+        self.locations_per_actor = {}
+
+    def add(self, actor):
+        bl = ((actor.pos) / self.box_size).to_int()
+        tr = ((actor.pos + actor.size) / self.box_size).to_int()
+
+        for x in xrange(bl.x, tr.x + 1):
+            for y in xrange(bl.y, tr.y + 1):
+                try:
+                    self.grid[x][y].add(actor)
+                except IndexError:
+                    continue
+                try:
+                    self.locations_per_actor[actor].append( (x,y) )
+                except KeyError:
+                    self.locations_per_actor[actor] = [ (x,y) ]
+
+    def remove(self, actor):
+        try:
+            for x,y in self.locations_per_actor[actor]:
+                self.grid[x][y].remove(actor)
+        except KeyError:
+            pass
+        self.locations_per_actor[actor] = []
+
+    def nearby(self, actor):
+        #return all the actors that share locations with the given actor
+        if actor not in self.locations_per_actor:
+            return
+        for x,y in self.locations_per_actor[actor]:
+            for other in self.grid[x][y].actors:
+                if other is not actor:
+                    yield other
+
 class GameView(ui.RootElement):
     water_height = 40
     light_spacing = 250
-    light_height = 200
+    light_height = 150
     def __init__(self):
         self.atlas = globals.atlas = drawing.texture.TextureAtlas('tiles_atlas_0.png','tiles_atlas.txt')
         self.enemies = []
         #globals.ui_atlas = drawing.texture.TextureAtlas('ui_atlas_0.png','ui_atlas.txt',extra_names=False)
         self.viewpos = ViewPos(Point(0,0))
+        globals.aabb = AxisAlignedBoundingBoxes()
         #Make a big background. Making it large lets opengl take care of the texture coordinates
         #TODO: tie this in with the size of the map
         self.background = Background('tile')

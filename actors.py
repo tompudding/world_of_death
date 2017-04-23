@@ -73,7 +73,15 @@ class Actor(object):
         self.last_damage = globals.time
         self.AdjustHealth(-amount)
 
+    def remove_from_map(self):
+        if self.pos != None:
+            globals.aabb.remove(self)
+
+    def add_to_map(self):
+        globals.aabb.add(self)
+
     def SetPos(self,pos):
+        self.remove_from_map()
         self.pos = pos
 
         self.vertices = [((pos + corner)) for corner in self.corners_euclid]
@@ -85,6 +93,7 @@ class Actor(object):
         #self.quad.SetVertices(bl,tr,4)
 
         self.quad.SetAllVertices(self.vertices, 4)
+        self.add_to_map()
 
     def TriggerCollide(self,other):
         pass
@@ -112,6 +121,8 @@ class Actor(object):
         angle_change = self.angle_speed*elapsed
         self.set_angle(self.angle + angle_change)
 
+        amount = Point(0,0)
+
         self.move_speed += self.move_direction.Rotate(self.angle)*elapsed
         #self.move_speed += self.move_direction*elapsed
         if self.move_speed.SquareLength() > self.max_square_speed:
@@ -122,7 +133,27 @@ class Actor(object):
         if self.interacting:
             self.move_speed = Point(0,0)
 
-        amount = self.move_speed * elapsed
+        amount += self.move_speed * elapsed
+
+        #check for collisions
+        for other in globals.aabb.nearby(self):
+            #print other.pos,'near',self.pos
+            if isinstance(other,Player):
+                #handle this separate
+                continue
+
+            #All these mobile things are helpfull just little spheres, so collision detection is easy
+            distance = other.pos - (self.pos + amount)
+            if distance.SquareLength() < self.radius_square + other.radius_square:
+                print self,'collided with',other
+                t = self.move_speed
+                self.move_speed = other.move_speed
+                other.move_speed = t
+                #self.move_direction = other.move_direction = 0
+                #also need to move them so they don't overlap
+                overlap = self.radius + other.radius - distance.length()
+                adjust = distance.unit_vector()*-overlap
+                amount += adjust*0.1
 
         self.SetPos(self.pos + amount)
         #self.SetPos(self.pos)
@@ -320,6 +351,12 @@ class Boat(Actor):
         super(Boat,self).__init__(Point(pos.x, pos.y + self.water_height))
         #self.light = ActorLight(self)
 
+    def remove_from_map(self):
+        pass
+
+    def add_to_map(self):
+        pass
+
     def Update(self,t):
         elapsed = super(Boat,self).Update(t)
         if not elapsed:
@@ -424,8 +461,10 @@ class Critter(Actor):
             fall_distance = -(self.pos.y - player.pos.y)
             start_speed_y = random.random()*10
             a = gravity
-
-            fall_time = (math.sqrt(start_speed_y**2 + 2*a*fall_distance) - start_speed_y) / a
+            if fall_distance < 0:
+                fall_time = -1
+            else:
+                fall_time = (math.sqrt(start_speed_y**2 + 2*a*fall_distance) - start_speed_y) / a
             x = (-math.sqrt(start_speed_y**2 + 2*a*fall_distance) - start_speed_y) / a
 
             fall_time = max(fall_time,x)/globals.time_step
