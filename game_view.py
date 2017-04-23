@@ -257,6 +257,7 @@ class GameView(ui.RootElement):
         #self.map.world_size = self.map.size * globals.tile_dimensions
         self.boat = actors.Boat(Point(globals.screen_showing.x /2 ,self.water_height), self.water)
         self.boat.move_direction = Point(0.2,0)
+        self.player = actors.Player(self.boat)
 
         self.critters = []
         for i in xrange(10):
@@ -284,6 +285,7 @@ class GameView(ui.RootElement):
         #drawing.DrawAll(globals.nonstatic_text_buffer,globals.text_manager.atlas.texture)
 
     def Update(self,t):
+
         if self.mode:
             self.mode.Update(t)
 
@@ -293,6 +295,7 @@ class GameView(ui.RootElement):
         self.t = t
         self.water.Update()
         self.boat.Update(t)
+        self.player.Update(t)
         for critter in self.critters:
             critter.Update(t)
         self.critters = [critter for critter in self.critters if not critter.dead]

@@ -295,6 +295,18 @@ class Torch(ConeLight):
         self.quad.SetVertices(bl,tr,4)
         #self.quad.SetAllVertices(self.parent.vertices, 0)
 
+class Player(Actor):
+    texture = 'guy_pipe'
+    width = 32
+    height = 37
+    boat_offset = Point(24,20)
+    def __init__(self, boat):
+        self.boat = boat
+        super(Player,self).__init__(self.boat.pos + self.boat_offset)
+
+    def Update(self,t):
+        self.SetPos(self.boat.pos + self.boat_offset)
+
 class Boat(Actor):
     texture = 'boat'
     width = 108
