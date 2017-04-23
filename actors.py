@@ -921,21 +921,22 @@ class Arrow(Actor):
 
 
 class Rock(Actor):
-    texture = 'arrow'
-    width = 6
-    height = 16
+    texture = 'rock'
+    width = 8
+    height = 8
     max_speed = 100
     max_life = 10000
     max_square_speed = max_speed**2
     damage_amount = 1
 
     def __init__(self, parent, pos, dir, speed):
-        self.angle_speed = 1
+
         super(Rock,self).__init__(pos)
         self.parent = parent
         self.move_direction = dir
         self.move_speed = speed
         self.splashed = False
+        self.real_angle = 0
 
     def possible_collision(self, other, amount):
         if other.is_player:
@@ -962,7 +963,7 @@ class Rock(Actor):
                     self.bounce_allowed = globals.time + self.bounce_holdoff
 
     def Update(self, t):
-        super(Rock,self).Update(t)
+        elapsed = super(Rock,self).Update(t)
 
         if not self.splashed and self.pos.y < 60:
             water_height = globals.game_view.water.get_height(self.pos.x)
@@ -972,6 +973,12 @@ class Rock(Actor):
 
         if self.pos.y < 0:
             self.kill()
+
+        self.real_angle += elapsed * 0.5
+        self.corners_polar  = [(p.length(),self.real_angle + self.polar_offsets[i]) for i,p in enumerate(self.corners)]
+        cnums = [cmath.rect(r,a) for (r,a) in self.corners_polar]
+        self.corners_euclid = [Point(c.real,c.imag) for c in cnums]
+        self.SetPos(self.pos)
 
 
 class BowCritter(Critter):
