@@ -8,8 +8,38 @@ import random
 import actors
 
 class ViewPos(object):
+    shake_radius = 10
     def __init__(self, pos):
         self.pos = pos
+        self.shake_end = None
+        self.shake_duration = 1
+        self.shake = Point(0,0)
+        self.last_update = None
+
+    def ScreenShake(self,radius,duration):
+        self.shake_end = globals.time + duration
+        self.shake_raidus = radius
+        self.shake_duration = float(duration)
+
+    @property
+    def full_pos(self):
+        return self.pos + self.shake
+
+    def Update(self):
+        if self.last_update is None:
+            self.last_update = globals.time
+            return
+        elapsed = (globals.time - self.last_update) * globals.time_step
+        self.last_update = globals.time
+
+        if self.shake_end:
+            if globals.time >= self.shake_end:
+                self.shake_end = None
+                self.shake = Point(0,0)
+            else:
+                left = (self.shake_end - globals.time)/self.shake_duration
+                radius = left*self.shake_radius
+                self.shake = Point(random.random()*radius,random.random()*radius)
 
 class TimeOfDay(object):
     def __init__(self,t):
@@ -350,7 +380,8 @@ class GameView(ui.RootElement):
         self.flicker_start = None
         self.last_flicker_period = 0
         self.text_end = None
-        self.next_level = self.level_one
+        self.next_level = self.level_three
+        #self.next_level = self.level_one
         self.level_end = None
 
         return
@@ -373,7 +404,7 @@ class GameView(ui.RootElement):
             self.critters.append(actors.RockCritter(Point(600+i*16,120)))
 
     def tutorial_swing_brolly(self):
-        self.tutorial_text.SetText('Oh my, please dont do that sir. In fact it may get wet soon so you\'ll need to open your brolly with the right mouse button ')
+        self.tutorial_text.SetText('Oh my, please dont do that sir. In fact it may get wet soon so you\'ll need to open your brolly with the right mouse button')
         self.water_range = self.viewpos.pos.x + globals.screen_showing.x
         space = 4
         for i in xrange(20):
@@ -398,7 +429,7 @@ class GameView(ui.RootElement):
 
     def Draw(self):
         drawing.ResetState()
-        drawing.Translate(-self.viewpos.pos.x,-self.viewpos.pos.y,0)
+        drawing.Translate(-self.viewpos.full_pos.x,-self.viewpos.full_pos.y,0)
         drawing.Scale(globals.scale.x, globals.scale.y, 1)
         drawing.DrawAll(globals.quad_buffer,self.atlas.texture)
         #glEnable(GL_BLEND);
@@ -438,7 +469,7 @@ class GameView(ui.RootElement):
             #End of the tutorial
             self.next_level()
 
-        elif self.level_end and self.boat.pos.x > self.level_end or len(self.critters) == 0:
+        elif self.level_end and self.boat.pos.x > self.level_end or (not self.tutorial and len(self.critters) == 0):
             print 'end of level!'
             self.next_level()
 
@@ -455,6 +486,7 @@ class GameView(ui.RootElement):
         self.arrows = [arrow for arrow in self.arrows if not arrow.dead]
 
         self.viewpos.pos.x = self.boat.pos.x - globals.screen_showing.x/2
+        self.viewpos.Update()
 
         if int((self.viewpos.pos.x - self.lights_start)/self.light_spacing) >= 1:
             #move the first to the last
@@ -507,6 +539,9 @@ class GameView(ui.RootElement):
             self.critters.append(actors.RockCritter(Point(x_0+i*16,140)))
         x_0 += 8*16
 
+        for i in xrange(10):
+            self.critters.append(actors.RockCritter(Point(x_0+500+i*16,140)))
+
         self.tutorial_text.SetText("It's a world of laughter, a world of tears. It's a world of hope and a world of FEEAAARRRSS!")
         self.text_end = globals.time + 2000
         self.boat.move_direction = Point(0.2,0)
@@ -531,6 +566,34 @@ class GameView(ui.RootElement):
         self.next_level = self.level_three
 
     def level_three(self):
+        #same as one, but with a couple of arrow guys
+        self.tutorial_text.SetText("It's a small world after all, It's a small world after all...")
+        self.text_end = globals.time + 2000
+        self.boat.move_direction = Point(0.3,0)
+        for light in globals.lights:
+            light.on = False
+            self.timeofday.Set(0.0)
+            self.flicker_start = globals.time
+            self.flicker_end = globals.time + 4000
+
+        x_0 = self.viewpos.pos.x + globals.screen_showing.x
+        self.critters.append(actors.BowCritter(Point(x_0, 140)))
+        self.critters.append(actors.BowCritter(Point(x_0 + 500, 180)))
+        for i in xrange(25):
+            x = x_0 + random.random()*1000
+            y = 120 + random.random()*120
+            pos = Point(x,y)
+            while any( ((pos - critter.pos).length() < 20) for critter in self.critters):
+                #print 'skipping critter at',pos
+                x = x_0 + random.random()*1000
+                y = 120 + random.random()*120
+                pos = Point(x,y)
+            #print 'chose critter',pos
+            self.critters.append(actors.Critter(pos))
+        self.level_end = x_0 + 1000
+        self.next_level = self.level_four
+
+    def level_four(self):
         pass
 
     def GameOver(self):
@@ -544,7 +607,7 @@ class GameView(ui.RootElement):
         if key == pygame.K_ESCAPE and self.tutorial:
             self.tutorial = False
             self.help_text.SetText(' ')
-            self.level_one()
+            self.next_level()
         if key == pygame.K_DELETE:
             if self.music_playing:
                 self.music_playing = False
@@ -555,7 +618,7 @@ class GameView(ui.RootElement):
         self.mode.KeyUp(key)
 
     def MouseMotion(self,pos,rel,handled):
-        world_pos = self.viewpos.pos + pos
+        world_pos = self.viewpos.full_pos + pos
         self.mouse_pos = pos
         #print globals.mouse_world
 
@@ -573,7 +636,7 @@ class GameView(ui.RootElement):
             self.water.jiggle(globals.mouse_world.x, -10)
 
         if self.mode:
-            pos = self.viewpos.pos + pos
+            pos = self.viewpos.full_pos + pos
             return self.mode.MouseButtonDown(pos,button)
         else:
             return False,False
@@ -584,7 +647,7 @@ class GameView(ui.RootElement):
         elif button == 1:
             self.player.swing_brolly()
         if self.mode:
-            pos = self.viewpos.pos + pos
+            pos = self.viewpos.full_pos + pos
             return self.mode.MouseButtonUp(pos,button)
         else:
             return False,False

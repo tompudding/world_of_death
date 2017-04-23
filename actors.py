@@ -185,7 +185,7 @@ class Actor(object):
 
     @property
     def screen_pos(self):
-        p = (self.pos - globals.game_view.viewpos._pos)*globals.scale
+        p = (self.pos - globals.game_view.viewpos.full_pos)*globals.scale
         return p
 
 
@@ -224,7 +224,7 @@ class Light(object):
     @property
     def screen_pos(self):
         p = self.pos
-        return ((p[0] - globals.game_view.viewpos.pos.x)*globals.scale.x,(p[1]-globals.game_view.viewpos.pos.y)*globals.scale.y,self.z)
+        return ((p[0] - globals.game_view.viewpos.full_pos.x)*globals.scale.x,(p[1]-globals.game_view.viewpos.full_pos.y)*globals.scale.y,self.z)
 
 class NonShadowLight(Light):
     def append_to_list(self):
@@ -298,7 +298,7 @@ class ConeLight(object):
     @property
     def screen_pos(self):
         p = self.pos
-        out =  ((p[0] - globals.game_view.viewpos._pos.x)*globals.scale.x,(p[1]-globals.game_view.viewpos._pos.y)*globals.scale.y,self.z)
+        out =  ((p[0] - globals.game_view.viewpos.full_pos.x)*globals.scale.x,(p[1]-globals.game_view.viewpos.full_pos.y)*globals.scale.y,self.z)
         return out
 
 class Torch(ConeLight):
@@ -484,6 +484,7 @@ class Player(SquareActor):
         super(Player,self).damage(amount)
         print 'health',self.health
         globals.game_view.health_display.set_health(float(self.health) / self.initial_health)
+        globals.game_view.viewpos.ScreenShake(amount, 400)
 
     def add_snacking(self, critter):
         self.snackers.append(critter)
