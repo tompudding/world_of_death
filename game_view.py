@@ -282,6 +282,7 @@ class GameView(ui.RootElement):
     light_height = 150
     def __init__(self):
         self.atlas = globals.atlas = drawing.texture.TextureAtlas('tiles_atlas_0.png','tiles_atlas.txt')
+        globals.ui_atlas = drawing.texture.TextureAtlas('ui_atlas_0.png','ui_atlas.txt',extra_names=False)
         self.enemies = []
         #globals.ui_atlas = drawing.texture.TextureAtlas('ui_atlas_0.png','ui_atlas.txt',extra_names=False)
         self.viewpos = ViewPos(Point(0,0))
@@ -290,6 +291,12 @@ class GameView(ui.RootElement):
         #TODO: tie this in with the size of the map
         self.background = Background('tile')
         self.water = Water(parent = self, height = self.water_height)
+        self.health_display = ui.Hearts(parent = globals.screen_root,
+                                        pos = Point(0.02,0.04),
+                                        full_tc = globals.ui_atlas.TextureUiCoords('hearts_full.png'),
+                                        empty_tc = globals.ui_atlas.TextureUiCoords('hearts_empty.png'),
+                                        buffer = globals.screen_texture_buffer)
+
 
         self.game_over = False
         self.mouse_world = Point(0,0)
@@ -419,6 +426,7 @@ class GameView(ui.RootElement):
         elif button == 1:
             self.player.prepare_brolly_swing()
         else:
+            self.player.damage(10)
             self.water.jiggle(globals.mouse_world.x, -10)
 
         if self.mode:

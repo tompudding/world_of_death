@@ -301,8 +301,8 @@ class UIRoot(RootElement):
         for item in self.drawable_children:
             item.Draw()
 
-        #drawing.ResetState()
-        #drawing.DrawAll(globals.screen_texture_buffer,globals.ui_atlas.texture)
+        drawing.ResetState()
+        drawing.DrawAll(globals.screen_texture_buffer,globals.ui_atlas.texture)
 
     def Update(self,t):
         #Would it be faster to make a list of items to remove and then remove them, rather than build a new list?
@@ -1297,3 +1297,76 @@ class TabbedEnvironment(UIElement):
             if page is not self.current_page:
                 page.Disable()
 
+
+
+class Hearts(Box):
+    def __init__(self,parent,pos,full_tc,empty_tc,buffer=None,level = None):
+        tr = pos + parent.GetRelative( Point(80*4,16*4) )
+        super(Box,self).__init__(parent,pos,tr)
+        if buffer == None:
+            buffer = globals.ui_texture_buffer
+
+        self.full_quad = drawing.Quad(buffer)
+        self.empty_quad = drawing.Quad(buffer)
+        self.full_tc = full_tc
+        self.empty_tc = empty_tc
+        self.extra_level = 0 if level == None else level
+        self.full_quad.SetVertices(self.absolute.bottom_left,
+                                   self.absolute.top_right,
+                                   self.level + self.extra_level)
+        self.full_quad.SetTextureCoordinates(self.full_tc)
+        self.Enable()
+
+    def Enable(self):
+        if not self.enabled:
+            self.full_quad.Enable()
+            self.empty_quad.Enable()
+        super(Box,self).Enable()
+
+    def Disable(self):
+        if self.enabled:
+            self.full_quad.Disable()
+            self.empty_quad.Disable()
+        super(Box,self).Disable()
+
+    def set_health(self, health):
+        #health is between 0 and 1
+        #first set the full quad vertices
+        full_bl = self.absolute.bottom_left
+        full_size = Point(self.absolute.size.x * health, self.absolute.size.y)
+        full_tr = full_bl + full_size
+        print full_bl + full_size, self.absolute.top_right
+        self.full_quad.SetVertices(full_bl,
+                                   full_tr,
+                                   self.level + self.extra_level)
+        #now tcs
+        new_tc = self.full_tc[::]
+        tc_x = new_tc[2][0] - new_tc[1][0]
+        new_x = new_tc[1][0] + tc_x*health
+        new_tc[2] = [new_x,new_tc[2][1]]
+        new_tc[3] = [new_x,new_tc[3][1]]
+
+        empty_bl = Point(full_tr.x, full_bl.y)
+        self.full_quad.SetTextureCoordinates( new_tc )
+
+        self.empty_quad.SetVertices(empty_bl,
+                                    self.absolute.top_right,
+                                    self.level + self.extra_level)
+
+        new_tc = self.empty_tc[::]
+        tc_x = new_tc[2][0] - new_tc[1][0]
+        new_x = new_tc[1][0] + tc_x*(health)
+        new_tc[0] = [new_x,new_tc[0][1]]
+        new_tc[1] = [new_x,new_tc[1][1]]
+        print new_tc, self.empty_tc
+
+        self.empty_quad.SetTextureCoordinates( new_tc )
+
+
+    def ResizeImage(self,new_size):
+        """The image currently takes up the whole box. Resize it to take up the new amounts"""
+        abs_size = new_size * self.absolute.size
+        offset = (self.absolute.size-abs_size)/2.0
+        self.quad.SetVertices(self.absolute.bottom_left + offset,
+                              self.absolute.top_right - offset,
+                              self.level + self.extra_level)

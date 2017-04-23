@@ -86,8 +86,7 @@ def main():
         globals.current_view.Update(t)
         globals.current_view.Draw()
         globals.screen_root.Draw()
-        drawing.ResetState()
-        #globals.text_manager.Draw()
+        globals.text_manager.Draw()
         drawing.EndFrame()
         pygame.display.flip()
 

@@ -490,6 +490,7 @@ class Player(SquareActor):
     brolly_up_time = 100
     brolly_down_time = 100
     brolly_swing_time = 400
+    immune_duration = 0
 
     class Status:
         BROLLY_UP = 0
@@ -514,11 +515,11 @@ class Player(SquareActor):
         self.brolly = Brolly(self)
         self.brolly.put_down()
         self.snackers = []
-        self.health = 100
 
     def damage(self, amount):
-        self.health -= amount
+        super(Player,self).damage(amount)
         print 'health',self.health
+        globals.game_view.health_display.set_health(float(self.health) / self.initial_health)
 
     def add_snacking(self, critter):
         self.snackers.append(critter)
