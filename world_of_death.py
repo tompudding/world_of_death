@@ -46,6 +46,7 @@ def main():
         globals.sounds                = sounds.Sounds()
         globals.zoom_scale            = None
         globals.time_step             = 0.02
+        globals.pause_time = 0
         globals.mouse_world = Point(0,0)
 
         #WTF?
@@ -76,7 +77,7 @@ def main():
     while not done:
         drawing.NewFrame()
         clock.tick(60)
-        globals.time = t = pygame.time.get_ticks()
+        globals.time = t = pygame.time.get_ticks() - globals.pause_time
         if t - last > 1000:
             #print 'FPS:',clock.get_fps()
             last = t

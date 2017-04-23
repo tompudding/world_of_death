@@ -486,6 +486,9 @@ class Player(SquareActor):
         globals.game_view.health_display.set_health(float(self.health) / self.initial_health)
         globals.game_view.viewpos.ScreenShake(amount, 400)
 
+    def Death(self):
+        globals.game_view.GameOver()
+
     def add_snacking(self, critter):
         self.snackers.append(critter)
 
@@ -703,7 +706,8 @@ class Critter(Actor):
             return
 
         if other.bounce:
-            if other.up and globals.time > self.bounce_allowed and not self.on_boat:
+            #if other.up and globals.time > self.bounce_allowed and not self.on_boat:
+            if other.up and not self.on_boat:
                 #we should bounce off this
                 p = self.pos + amount
                 diff = other.pos - p

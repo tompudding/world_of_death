@@ -18,8 +18,11 @@ class ViewPos(object):
 
     def ScreenShake(self,radius,duration):
         self.shake_end = globals.time + duration
-        self.shake_raidus = radius
+        self.shake_radius = radius
         self.shake_duration = float(duration)
+
+    def reset(self):
+        self.shake_end = None
 
     @property
     def full_pos(self):
@@ -337,6 +340,23 @@ class GameView(ui.RootElement):
                                     text = 'ESC to skip tutorial',
                                     colour = (1,1,1,1),
                                     scale = 6)
+        self.game_over_frame = ui.UIElement(parent = globals.screen_root,
+                                            pos = Point(0.35,0.3),
+                                            tr = Point(0.75,0.7))
+        self.game_over_frame.title = ui.TextBox(parent = self.game_over_frame,
+                                                bl = Point(0.1,0),
+                                                tr = Point(0.9,0.9),
+                                                text = 'GAME OVER',
+                                                colour = (0.9,0.4,0.4,1),
+                                                scale = 36)
+        self.game_over_frame.help = ui.TextBox(parent = self.game_over_frame,
+                                               bl = Point(-0.62,0),
+                                               tr = None,
+                                               text = 'Press R to restart level or ESC to start over',
+                                               colour = (0.9,0.4,0.4,1),
+                                               scale = 12)
+
+        self.game_over_frame.Disable()
 
 
         self.game_over = False
@@ -380,9 +400,12 @@ class GameView(ui.RootElement):
         self.flicker_start = None
         self.last_flicker_period = 0
         self.text_end = None
-        self.next_level = self.level_three
-        #self.next_level = self.level_one
+        #self.next_level = self.level_three
+        self.next_level = self.level_one
+        self.last_level = self.level_one
         self.level_end = None
+        self.level_start_health = 100
+        self.won = False
 
         return
         #generate randomly for ther region 500 -> 1500
@@ -402,6 +425,13 @@ class GameView(ui.RootElement):
         self.critters.append(actors.BowCritter(Point(400,120)))
         for i in xrange(10):
             self.critters.append(actors.RockCritter(Point(600+i*16,120)))
+
+    def reset(self):
+        for c in self.critters:
+            c.kill()
+        self.critters = []
+        self.viewpos.reset()
+
 
     def tutorial_swing_brolly(self):
         self.tutorial_text.SetText('Oh my, please dont do that sir. In fact it may get wet soon so you\'ll need to open your brolly with the right mouse button')
@@ -467,10 +497,14 @@ class GameView(ui.RootElement):
 
         if self.water_range and self.water_range < self.viewpos.pos.x:
             #End of the tutorial
+            self.level_start_health = self.player.health
+            self.last_level = self.next_level
             self.next_level()
 
         elif self.level_end and self.boat.pos.x > self.level_end or (not self.tutorial and len(self.critters) == 0):
             print 'end of level!'
+            self.level_start_health = self.player.health
+            self.last_level = self.next_level
             self.next_level()
 
         self.t = t
@@ -594,20 +628,87 @@ class GameView(ui.RootElement):
         self.next_level = self.level_four
 
     def level_four(self):
-        pass
+        #Last level is throw everything at the wall
+        self.tutorial_text.SetText("Glllrrrg")
+        self.text_end = globals.time + 2000
+        self.boat.move_direction = Point(0.3,0)
+        for light in globals.lights:
+            light.on = False
+            self.timeofday.Set(0.0)
+            self.flicker_start = globals.time
+            self.flicker_end = globals.time + 4000
+
+        x_0 = self.viewpos.pos.x + globals.screen_showing.x
+        self.critters.append(actors.BowCritter(Point(x_0, 140)))
+        self.critters.append(actors.BowCritter(Point(x_0 + 500, 180)))
+        for i in xrange(25):
+            x = x_0 + random.random()*1000
+            y = 120 + random.random()*120
+            pos = Point(x,y)
+            while any( ((pos - critter.pos).length() < 20) for critter in self.critters):
+                #print 'skipping critter at',pos
+                x = x_0 + random.random()*1000
+                y = 120 + random.random()*120
+                pos = Point(x,y)
+            #print 'chose critter',pos
+            self.critters.append(actors.Critter(pos))
+        self.level_end = x_0 + 1000
+        self.next_level = self.win_game
+
+    def win_game(self):
+        self.game_over = True
+        self.won = True
+        self.game_over_frame.title.SetText('You win')
+        self.game_over_frame.help.SetText('Press R to restart or any other key to exit')
+        self.game_over_frame.Enable()
+        self.game_over_start = globals.time
 
     def GameOver(self):
         self.game_over = True
-        self.mode = modes.GameOver(self)
+        #self.mode = modes.GameOver(self)
+        self.game_over_frame.title.SetText('GAME OVER')
+        self.game_over_frame.help.SetText('Press R to restart level or ESC to start over')
+        self.game_over_start = globals.time
+        self.game_over_frame.Enable()
 
     def KeyDown(self,key):
         self.mode.KeyDown(key)
 
     def KeyUp(self,key):
+        if self.game_over:
+            if self.won and key != pygame.K_r:
+                #Just exit
+                raise SystemExit('Come again')
+
+            if not self.won and key == pygame.K_r:
+                print 'restart level'
+                h = self.level_start_health
+                level = self.last_level
+                self.reset()
+                self.player.health = h
+                level()
+
+            elif (not self.won and key == pygame.K_ESCAPE) or self.won:
+                print 'restart all'
+                self.reset()
+                self.level_one()
+            else:
+                return
+            self.game_over_frame.Disable()
+            self.game_over = False
+            globals.pause_time += (globals.time - self.game_over_start)
+            print 'pause_time',globals.pause_time
+            self.tutorial = False
+            self.player.damage(0)
+            return
+
         if key == pygame.K_ESCAPE and self.tutorial:
             self.tutorial = False
             self.help_text.SetText(' ')
+            self.last_level = self.next_level
             self.next_level()
+        if key == pygame.K_x:
+            self.win_game()
         if key == pygame.K_DELETE:
             if self.music_playing:
                 self.music_playing = False
