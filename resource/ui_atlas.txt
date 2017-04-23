@@ -1,0 +1,2 @@
+resource/ui/hearts_empty.png:resource/ui_atlas_0.png:0:112.0:80:16
+resource/ui/hearts_full.png:resource/ui_atlas_0.png:0:96.0:80:16
