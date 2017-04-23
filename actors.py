@@ -146,11 +146,13 @@ class Actor(object):
                     self.kill()
                 continue
 
+            if self.dead or other.dead:
+                continue
 
             #All these mobile things are helpfull just little spheres, so collision detection is easy
             distance = other.pos - (self.pos + amount)
             if distance.SquareLength() < self.radius_square + other.radius_square:
-                print self,'collided with',other
+                print self,'collided with',other,other.dead,self.dead
                 t = self.move_speed
                 self.move_speed = other.move_speed
                 other.move_speed = t

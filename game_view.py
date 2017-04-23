@@ -319,7 +319,7 @@ class GameView(ui.RootElement):
         self.player = actors.Player(self.boat)
 
         self.critters = []
-        for i in xrange(5):
+        for i in xrange(10):
             x = 200 + random.random()*500
             y = 60 + random.random()*180
             self.critters.append(actors.Critter(Point(x,y)))
