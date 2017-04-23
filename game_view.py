@@ -227,7 +227,8 @@ class BoundingBox(object):
 
 class AxisAlignedBoundingBoxes(object):
     box_size = 16
-    def __init__(self):
+    def __init__(self, viewpos):
+        self.viewpos = viewpos
         self.grid = []
         for x in xrange(0, globals.screen_showing.x, self.box_size):
             col = []
@@ -237,8 +238,9 @@ class AxisAlignedBoundingBoxes(object):
         self.locations_per_actor = {}
 
     def add(self, actor):
-        bl = ((actor.pos) / self.box_size).to_int()
-        tr = ((actor.pos + actor.size) / self.box_size).to_int()
+        ap = actor.pos - self.viewpos.pos
+        bl = (ap / self.box_size).to_int()
+        tr = ((ap + actor.size) / self.box_size).to_int()
 
         for x in xrange(bl.x, tr.x + 1):
             for y in xrange(bl.y, tr.y + 1):
@@ -279,7 +281,7 @@ class GameView(ui.RootElement):
         self.enemies = []
         #globals.ui_atlas = drawing.texture.TextureAtlas('ui_atlas_0.png','ui_atlas.txt',extra_names=False)
         self.viewpos = ViewPos(Point(0,0))
-        globals.aabb = AxisAlignedBoundingBoxes()
+        globals.aabb = AxisAlignedBoundingBoxes(self.viewpos)
         #Make a big background. Making it large lets opengl take care of the texture coordinates
         #TODO: tie this in with the size of the map
         self.background = Background('tile')
@@ -320,7 +322,7 @@ class GameView(ui.RootElement):
 
         self.critters = []
         for i in xrange(10):
-            x = 200 + random.random()*500
+            x = 400 + random.random()*500
             y = 60 + random.random()*180
             self.critters.append(actors.Critter(Point(x,y)))
 
@@ -356,7 +358,7 @@ class GameView(ui.RootElement):
         self.boat.Update(t)
         self.player.Update(t)
         for critter in self.critters:
-           critter.Update(t)
+          critter.Update(t)
         self.critters = [critter for critter in self.critters if not critter.dead]
 
         self.viewpos.pos.x = self.boat.pos.x - globals.screen_showing.x/2
@@ -369,7 +371,7 @@ class GameView(ui.RootElement):
             self.room_lights[-1].set_pos( Point(self.lights_start + (len(self.room_lights)-1)*self.light_spacing,self.light_height) )
 
         globals.mouse_world = self.viewpos.pos + self.mouse_pos
-        #print globals.mouse_world, self.boat.is_inside(globals.mouse_world)
+        #print globals.mouse_world, self.player.brolly.is_inside(globals.mouse_world)
 
     def GameOver(self):
         self.game_over = True

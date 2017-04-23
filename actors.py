@@ -18,9 +18,12 @@ class Actor(object):
     width   = None
     height  = None
     initial_health = 100
+    is_player = False
+    bounce = False
 
     max_speed = 3
     max_square_speed = max_speed**2
+    bounce_holdoff = 1000
     def __init__(self,pos):
         self.tc             = globals.atlas.TextureSpriteCoords('%s.png' % self.texture)
         self.quad           = drawing.Quad(globals.quad_buffer,tc = self.tc)
@@ -45,6 +48,7 @@ class Actor(object):
         self.health = self.initial_health
         self.interacting = None
         self.SetPos(pos)
+        self.bounce_allowed = 0
 
         self.set_angle(0)
 
@@ -138,7 +142,7 @@ class Actor(object):
         #check for collisions
         for other in globals.aabb.nearby(self):
             #print other.pos,'near',self.pos
-            if isinstance(other,Player):
+            if other.is_player:
                 #handle this separate
                 p = self.pos + amount
                 probe = p + ((other.pos - p).unit_vector()*self.radius)
@@ -147,6 +151,17 @@ class Actor(object):
                 continue
 
             if self.dead or other.dead:
+                continue
+
+            if other.bounce:
+                if globals.time > self.bounce_allowed:
+                    #we should bounce off this
+                    p = self.pos + amount
+                    probe = p + ((other.pos - p).unit_vector()*self.radius)
+                    if other.is_inside(probe) or other.is_inside(self.pos):
+                        print self,'hit brolly'
+                        self.move_speed *= -1
+                        self.bounce_allowed = globals.time + self.bounce_holdoff
                 continue
 
             #All these mobile things are helpfull just little spheres, so collision detection is easy
@@ -350,6 +365,20 @@ class SquareActor(Actor):
                 return True
         return False
 
+class Brolly(SquareActor):
+    texture = 'brolly_open'
+    arm_offset = Point(-3,20)
+    width = 31
+    height = 37
+    collide_centre = Point(0,12)
+    collide_size = Point(31,12)
+    bounce = True
+    def __init__(self, person):
+        self.person = person
+        super(Brolly,self).__init__(self.person.pos + self.arm_offset)
+
+    def Update(self,t):
+        self.SetPos(self.person.pos + self.arm_offset)
 
 class Player(SquareActor):
     texture = 'guy_nothing'
@@ -358,12 +387,15 @@ class Player(SquareActor):
     boat_offset = Point(24,9)
     collide_size = Point(12,24.5).to_float()
     collide_centre = Point(-1,-4)
+    is_player = True
     def __init__(self, boat):
         self.boat = boat
         super(Player,self).__init__(self.boat.pos + self.boat_offset)
+        self.brolly = Brolly(self)
 
     def Update(self,t):
         self.SetPos(self.boat.pos + self.boat_offset)
+        self.brolly.Update(t)
 
 class Boat(SquareActor):
     texture = 'boat'
