@@ -396,6 +396,7 @@ class Critter(Actor):
     def Update(self,t):
         #self.light.Update(t)
         boat = globals.game_view.boat
+        player = globals.game_view.player
         if self.jumping:
             self.Move(t)
             if not self.splashed and self.pos.y < 60:
@@ -412,7 +413,7 @@ class Critter(Actor):
                 self.dead = True
 
         if self.start_jump is None:
-            distance = boat.pos.x - self.pos.x
+            distance = player.pos.x - self.pos.x
             if abs(distance) < self.activation_distance:
                 self.start_jump = globals.time + self.activation_length
                 print 'start jump in',self.activation_length
@@ -420,7 +421,7 @@ class Critter(Actor):
         elif globals.time > self.start_jump and not self.jumping:
             print 'Start jump boom',globals.time
             gravity = -1
-            fall_distance = -(self.pos.y - boat.pos.y)
+            fall_distance = -(self.pos.y - player.pos.y)
             start_speed_y = random.random()*10
             a = gravity
 
@@ -431,8 +432,8 @@ class Critter(Actor):
 
             #print 'guess at',globals.time + fall_time
             #What position will the boat be in at that time?
-            boat_pos_future = boat.pos.x + boat.move_speed.x*fall_time*globals.time_step
-            #print 'boat_pos guess',boat_pos_future,boat.pos.x
+            boat_pos_future = player.pos.x + boat.move_speed.x*fall_time*globals.time_step
+            #print 'boat_pos guess',boat_pos_future,player.pos.x
             #Now we just need to choose our x speed to arrive there at that time
             distance = boat_pos_future - self.pos.x
 
