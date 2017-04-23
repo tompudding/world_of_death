@@ -438,7 +438,7 @@ class GameView(ui.RootElement):
             #End of the tutorial
             self.next_level()
 
-        elif self.level_end and self.boat.pos.x > self.level_end:
+        elif self.level_end and self.boat.pos.x > self.level_end or len(self.critters) == 0:
             print 'end of level!'
             self.next_level()
 
@@ -501,8 +501,37 @@ class GameView(ui.RootElement):
         self.next_level = self.level_two
 
     def level_two(self):
-        self.level_end = self.viewpos.pos.x + globals.screen_showing.x + 1000
-        print self.critters
+
+        x_0 = self.viewpos.pos.x + globals.screen_showing.x
+        for i in xrange(10):
+            self.critters.append(actors.RockCritter(Point(x_0+i*16,140)))
+        x_0 += 8*16
+
+        self.tutorial_text.SetText("It's a world of laughter, a world of tears. It's a world of hope and a world of FEEAAARRRSS!")
+        self.text_end = globals.time + 2000
+        self.boat.move_direction = Point(0.2,0)
+        for light in globals.lights:
+            light.on = False
+            self.timeofday.Set(0.0)
+            self.flicker_start = globals.time
+            self.flicker_end = globals.time + 4000
+
+        for i in xrange(25):
+            x = x_0 + random.random()*1000
+            y = 120 + random.random()*120
+            pos = Point(x,y)
+            while any( ((pos - critter.pos).length() < 20) for critter in self.critters):
+                #print 'skipping critter at',pos
+                x = x_0 + random.random()*1000
+                y = 120 + random.random()*120
+                pos = Point(x,y)
+            #print 'chose critter',pos
+            self.critters.append(actors.Critter(pos))
+        self.level_end = x_0 + 1000
+        self.next_level = self.level_three
+
+    def level_three(self):
+        pass
 
     def GameOver(self):
         self.game_over = True
