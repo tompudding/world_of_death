@@ -9,3 +9,4 @@ resource/sprites/basic_critter.png:resource/tiles_atlas_0.png:108:112.0:16:16
 resource/sprites/rock.png:resource/tiles_atlas_0.png:0:0.0:16:16
 resource/sprites/critter_snack.png:resource/tiles_atlas_0.png:16:0.0:16:16
 resource/sprites/arrow.png:resource/tiles_atlas_0.png:32:0.0:6:16
+resource/sprites/drop.png:resource/tiles_atlas_0.png:108:104.0:8:8

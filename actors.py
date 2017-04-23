@@ -980,6 +980,56 @@ class Rock(Actor):
         self.corners_euclid = [Point(c.real,c.imag) for c in cnums]
         self.SetPos(self.pos)
 
+class Drop(Actor):
+    texture = 'drop'
+    width = 8
+    height = 8
+    max_speed = 100
+    max_life = 10000
+    max_square_speed = max_speed**2
+    damage_amount = 0
+
+    def __init__(self, parent, pos, dir, speed):
+
+        super(Drop,self).__init__(pos)
+        self.parent = parent
+        self.move_direction = dir
+        self.move_speed = speed
+        self.splashed = False
+        self.real_angle = 0
+
+    def possible_collision(self, other, amount):
+        if other.is_player:
+            #handle this separate
+
+            #p = self.pos + amount
+            #p = self.pos
+            #probe = p + ((other.pos - p).unit_vector()*self.radius)
+            probe = self.pos
+            if other.is_inside(probe):
+                self.kill()
+            return
+
+        if other.bounce:
+            if other.up:
+                probe = self.pos
+                if other.is_inside(probe):
+                    self.kill()
+
+
+
+    def Update(self, t):
+        elapsed = super(Drop,self).Update(t)
+
+        if not self.splashed and self.pos.y < 60:
+            water_height = globals.game_view.water.get_height(self.pos.x)
+            if abs(self.pos.y - water_height) < 10:
+                globals.game_view.water.jiggle(self.pos.x, self.move_speed.y*0.1)
+                self.splashed = True
+
+        if self.pos.y < 0:
+            self.kill()
+
 
 class BowCritter(Critter):
     shooting_range = 300
