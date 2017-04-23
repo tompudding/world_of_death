@@ -56,6 +56,8 @@ class Actor(object):
         self.bounce_allowed = 0
         self.dir = Dirs.RIGHT
         self.on_boat = False
+        self.been_hit = False
+        self.snacking = False
 
         self.set_angle(0)
 
@@ -153,12 +155,19 @@ class Actor(object):
             #print other.pos,'near',self.pos
             if other.is_player:
                 #handle this separate
+                if self.been_hit:
+                    #we can't hurt the player if we've been hit
+                    continue
                 p = self.pos + amount
                 #p = self.pos
                 #probe = p + ((other.pos - p).unit_vector()*self.radius)
                 probe = self.pos
                 if other.is_inside(probe):
-                    self.kill()
+                    self.snacking = True
+                    self.done_snacking = globals.time + self.snacking_time
+                    self.start_snacking = globals.time
+                    self.player_offset = self.pos - other.pos
+                    other.add_snacking(self)
                 continue
 
             if self.dead or other.dead:
@@ -180,7 +189,7 @@ class Actor(object):
 
             #All these mobile things are helpfull just little spheres, so collision detection is easy
             distance = other.pos - (self.pos + amount)
-            if distance.SquareLength() < self.radius_square + other.radius_square:
+            if distance.SquareLength() < self.radius_square + other.radius_square and not self.snacking and not other.snacking:
                 print self,'collided with',other,other.dead,self.dead
                 t = self.move_speed
                 self.move_speed = other.move_speed
@@ -448,6 +457,7 @@ class Brolly(SquareActor):
             critter.move_speed.y += 10
             #renable gravity if it were turned off
             critter.move_direction = Point(0,-1)
+            critter.been_hit = True
 
 
 
@@ -503,6 +513,10 @@ class Player(SquareActor):
 
         self.brolly = Brolly(self)
         self.brolly.put_down()
+        self.snackers = []
+
+    def add_snacking(self, critter):
+        self.snackers.append(critter)
 
     def Update(self,t):
 
@@ -668,6 +682,7 @@ class Critter(Actor):
     height = 16
     max_speed = 100
     max_square_speed = max_speed**2
+    snacking_time = 4000
 
     def __init__(self, pos):
         super(Critter,self).__init__(pos)
@@ -678,6 +693,11 @@ class Critter(Actor):
         self.jumping = False
         self.splashed = False
         self.on_boat = False
+        self.done_snacking = 0
+        self.start_snacking = 0
+        self.snacking = False
+        self.snacking_tc = globals.atlas.TextureSpriteCoords('critter_snack.png')
+
 
     def kill(self):
         globals.aabb.remove(self)
@@ -687,12 +707,31 @@ class Critter(Actor):
 
     def Update(self,t):
         #self.light.Update(t)
+        if self.dead:
+            return
         boat = globals.game_view.boat
         player = globals.game_view.player
+        if self.snacking:
+
+            if globals.time > self.done_snacking:
+                self.kill()
+                return
+
+            elapsed = globals.time - self.start_snacking
+            self.SetPos(player.pos + self.player_offset)
+            #Move it up and down
+            if (elapsed % 200) > 100:
+                vertices = [v + Point(0,2) for v in self.vertices]
+            else:
+                vertices = self.vertices
+            self.quad.SetAllVertices(vertices, self.level)
+            self.quad.SetTextureCoordinates(self.snacking_tc)
+            return
+
         if self.jumping:
             if not self.on_boat:
                 self.Move(t)
-                if boat.is_inside(self.pos):
+                if boat.is_inside(self.pos) and not self.been_hit:
                     globals.game_view.water.jiggle(self.pos.x, self.move_speed.y/4)
                     self.on_boat = True
                     self.boat_offset = self.pos - boat.pos
