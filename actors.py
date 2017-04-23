@@ -663,7 +663,7 @@ class Critter(Actor):
     max_speed = 100
     max_square_speed = max_speed**2
     snacking_time = 4000
-    snack_damage = 2
+    snack_damage = 4
 
     def __init__(self, pos):
         super(Critter,self).__init__(pos)
@@ -933,7 +933,7 @@ class Rock(Actor):
     max_speed = 100
     max_life = 10000
     max_square_speed = max_speed**2
-    damage_amount = 1
+    damage_amount = 8
 
     def __init__(self, parent, pos, dir, speed):
 

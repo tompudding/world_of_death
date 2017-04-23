@@ -301,6 +301,12 @@ class GameView(ui.RootElement):
                                         text = 'Welcome! Please keep your hands inside the boat at all times. Don\'t for instance press the left mouse button to swing your brolly',
                                         colour = (1,1,1,1),
                                         scale = 6)
+        self.help_text = ui.TextBox(parent = globals.screen_root,
+                                    bl = Point(0.4,0),
+                                    tr = Point(1,0.05),
+                                    text = 'ESC to skip tutorial',
+                                    colour = (1,1,1,1),
+                                    scale = 6)
 
 
         self.game_over = False
@@ -343,17 +349,20 @@ class GameView(ui.RootElement):
         self.water_range = None
         self.flicker_start = None
         self.last_flicker_period = 0
+        self.text_end = None
+        self.next_level = self.level_one
+        self.level_end = None
 
         return
         #generate randomly for ther region 500 -> 1500
         for i in xrange(20):
 
-            x = 500 + random.random()*1000
+            x = 500 + random.random()*800
             y = 120 + random.random()*120
             pos = Point(x,y)
             while any( ((pos - critter.pos).length() < 20) for critter in self.critters):
                 print 'skipping critter at',pos
-                x = 500 + random.random()*1000
+                x = 500 + random.random()*800
                 y = 120 + random.random()*120
                 pos = Point(x,y)
             print 'chose critter',pos
@@ -377,6 +386,7 @@ class GameView(ui.RootElement):
     def tutorial_open_brolly(self):
         self.tutorial_text.SetText(' ')
         self.tutorial = False
+        self.help_text.SetText(' ')
 
     def StartMusic(self):
         return
@@ -405,6 +415,10 @@ class GameView(ui.RootElement):
         if self.game_over:
             return
 
+        if self.text_end and globals.time > self.text_end:
+            self.tutorial_text.SetText(' ')
+            self.text_end = None
+
         if self.flicker_start:
             if globals.time > self.flicker_end:
                 #we're done
@@ -421,18 +435,12 @@ class GameView(ui.RootElement):
                     self.timeofday.Set(random.choice((0,0.28)))
 
         if self.water_range and self.water_range < self.viewpos.pos.x:
-            for c in self.water_critters:
-                c.kill()
-            self.water_critters = []
-            self.water_range = None
-            self.tutorial_text.SetText('It\'s ... a .. Smmmaaaaallll')
-            self.boat.move_direction = Point(0.2,0)
-            for light in globals.lights:
-                light.on = False
-                self.timeofday.Set(0.0)
-                self.flicker_start = globals.time
-                self.flicker_end = globals.time + 4000
-            self.prepare_level_one()
+            #End of the tutorial
+            self.next_level()
+
+        elif self.level_end and self.boat.pos.x > self.level_end:
+            print 'end of level!'
+            self.next_level()
 
         self.t = t
         self.water.Update()
@@ -459,21 +467,43 @@ class GameView(ui.RootElement):
         #print globals.mouse_world, self.player.is_inside(globals.mouse_world)
         #print 'mw:',globals.mouse_world
 
-    def prepare_level_one(self):
+    def level_one(self):
         #Put in some sparse basic baddies
-        self.current_level = 1
+        self.water_range = None
+        for c in self.water_critters:
+            c.kill()
+        self.water_critters = []
+
+        self.tutorial_text.SetText('It\'s ... a .. Smmmaaaaallll')
+        self.text_end = globals.time + 2000
+        self.boat.move_direction = Point(0.2,0)
+        for light in globals.lights:
+            light.on = False
+            self.timeofday.Set(0.0)
+            self.flicker_start = globals.time
+            self.flicker_end = globals.time + 4000
+
         x_0 = self.viewpos.pos.x + globals.screen_showing.x
+        self.critters.append(actors.Critter(Point(x_0, 180)))
+
         for i in xrange(10):
-            x = x_0 + random.random()*1000
+            x = x_0 + random.random()*800
             y = 120 + random.random()*120
             pos = Point(x,y)
             while any( ((pos - critter.pos).length() < 20) for critter in self.critters):
                 #print 'skipping critter at',pos
-                x = x_0 + random.random()*1000
+                x = x_0 + random.random()*800
                 y = 120 + random.random()*120
                 pos = Point(x,y)
             #print 'chose critter',pos
             self.critters.append(actors.Critter(pos))
+        self.level_end = x_0 + 800
+        self.next_level = self.level_two
+
+    def level_two(self):
+        self.level_end = self.viewpos.pos.x + globals.screen_showing.x + 1000
+        print self.critters
+
     def GameOver(self):
         self.game_over = True
         self.mode = modes.GameOver(self)
@@ -482,6 +512,10 @@ class GameView(ui.RootElement):
         self.mode.KeyDown(key)
 
     def KeyUp(self,key):
+        if key == pygame.K_ESCAPE and self.tutorial:
+            self.tutorial = False
+            self.help_text.SetText(' ')
+            self.level_one()
         if key == pygame.K_DELETE:
             if self.music_playing:
                 self.music_playing = False
