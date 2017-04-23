@@ -55,6 +55,7 @@ class Actor(object):
         self.SetPos(pos)
         self.bounce_allowed = 0
         self.dir = Dirs.RIGHT
+        self.on_boat = False
 
         self.set_angle(0)
 
@@ -153,7 +154,9 @@ class Actor(object):
             if other.is_player:
                 #handle this separate
                 p = self.pos + amount
-                probe = p + ((other.pos - p).unit_vector()*self.radius)
+                #p = self.pos
+                #probe = p + ((other.pos - p).unit_vector()*self.radius)
+                probe = self.pos
                 if other.is_inside(probe):
                     self.kill()
                 continue
@@ -162,7 +165,7 @@ class Actor(object):
                 continue
 
             if other.bounce:
-                if other.up and globals.time > self.bounce_allowed:
+                if other.up and globals.time > self.bounce_allowed and not self.on_boat:
                     #we should bounce off this
                     p = self.pos + amount
                     diff = other.pos - p
@@ -363,13 +366,13 @@ class Torch(ConeLight):
         #self.quad.SetAllVertices(self.parent.vertices, 0)
 
 class SquareActor(Actor):
-    collide_centre = Point(0,0)
+    collide_centre = [Point(0,0),Point(0,0)]
     def is_inside(self, p):
         #first need to rotate the point so we can do the test
         diff = (p - self.pos).Rotate(-self.angle)
         new_p = self.pos + diff
-        bl = self.pos + self.collide_centre - self.collide_size/2
-        tr = bl + self.collide_size
+        bl = self.pos + self.collide_centre[self.dir] - self.collide_size[self.dir]/2
+        tr = bl + self.collide_size[self.dir]
 
         if new_p.x >= bl.x and new_p.x < tr.x:
             if new_p.y >= bl.y and new_p.y < tr.y:
@@ -381,8 +384,8 @@ class Brolly(SquareActor):
     arm_offset = [Point(-4,4),Point(3,4)]
     width = 31
     height = 37
-    collide_centre = Point(0,12)
-    collide_size = Point(31,12)
+    collide_centre = [Point(0,12),Point(0,12)]
+    collide_size = [Point(31,12),Point(31,12)]
     rotate_centre = Point(0,18)
     bounce = True
 
@@ -440,7 +443,9 @@ class Brolly(SquareActor):
             #print 'hit',diff
             #Send this guy flying in the direction we swung
             #thrust = cmath.rect(-10,self.angle + math.pi*0.5)
-            critter.move_speed += (diff.unit_vector() * 30)
+            critter.move_speed.x += (diff.unit_vector().x * 20)
+            #always knock them up for fun
+            critter.move_speed.y += 20
 
 
 
@@ -466,8 +471,8 @@ class Player(SquareActor):
     height = 48
     boat_offset_right = Point(24,9)
     boat_offset_left = Point(17,9)
-    collide_size = Point(12,24.5).to_float()
-    collide_centre = Point(-1,-4)
+    collide_size = [Point(8,24.5).to_float(),Point(8,24.5).to_float()]
+    collide_centre = [Point(-2,0),Point(4,0)]
     approx_boat_offset = Point(20,13)
     is_player = True
     brolly_up_time = 200
@@ -580,8 +585,8 @@ class Boat(SquareActor):
     water_height = 9
     max_speed = 3
     max_square_speed = max_speed**2
-    collide_centre = Point(0,-8)
-    collide_size = Point(width,height-8)
+    collide_size = [Point(width,height-8),Point(width,height-8)]
+    collide_centre = [Point(0,-8),Point(0,-8)]
     level = 6
     def __init__(self,pos,water):
         self.water = water
@@ -668,6 +673,7 @@ class Critter(Actor):
         self.start_jump = None
         self.jumping = False
         self.splashed = False
+        self.on_boat = False
 
     def kill(self):
         globals.aabb.remove(self)
@@ -680,7 +686,26 @@ class Critter(Actor):
         boat = globals.game_view.boat
         player = globals.game_view.player
         if self.jumping:
-            self.Move(t)
+            if not self.on_boat:
+                self.Move(t)
+                if boat.is_inside(self.pos):
+                    self.on_boat = True
+                    self.boat_offset = self.pos - boat.pos
+                    self.move_speed = Point( ((player.pos - self.pos).unit_vector() * 2).x,0)
+                    self.move_direction = Point(0,0)
+            else:
+                #We're on the boat!
+                #let's walk towards the player
+                #elapsed = (globals.time - self.last_update)*globals.time_step
+                #self.last_update = globals.time
+                #player_dir = (player.pos - self.pos).unit_vector() * 0.1 * elapsed
+                #self.boat_offset += player_dir
+                #self.SetPos(boat.pos + self.boat_offset)
+                self.Move(t)
+                self.splashed = True
+            if self.dead:
+                return
+
             if not self.splashed and self.pos.y < 60:
                 water_height = globals.game_view.water.get_height(self.pos.x)
                 if abs(self.pos.y - water_height) < 10:
@@ -700,6 +725,7 @@ class Critter(Actor):
             #self.start_jump = globals.time
         elif globals.time > self.start_jump and not self.jumping:
             print 'Start jump boom',globals.time
+            player = boat
             gravity = -1
             fall_distance = -(self.pos.y - player.pos.y)
             start_speed_y = random.random()*10

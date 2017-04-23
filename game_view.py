@@ -157,9 +157,10 @@ class Water(object):
     def jiggle(self, x, amount):
         n = int((x - self.left)/self.spacing)
         print 'jiggle at',x,n,len(self.trapezoids)
-        print self.springs[n].velocity
-        #if abs(self.springs[n].velocity) < 10:
-        self.springs[n].velocity += amount
+        try:
+            self.springs[n].velocity += amount
+        except IndexError:
+            pass
 
 
     def Update(self):
@@ -374,7 +375,7 @@ class GameView(ui.RootElement):
             self.room_lights[-1].set_pos( Point(self.lights_start + (len(self.room_lights)-1)*self.light_spacing,self.light_height) )
 
         globals.mouse_world = self.viewpos.pos + self.mouse_pos
-        #print globals.mouse_world, self.player.brolly.is_inside(globals.mouse_world)
+        #print globals.mouse_world, self.player.is_inside(globals.mouse_world)
         #print 'mw:',globals.mouse_world
 
     def GameOver(self):
