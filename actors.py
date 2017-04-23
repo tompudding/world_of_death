@@ -12,6 +12,9 @@ import math
 import numpy
 import modes
 
+class Dirs:
+    RIGHT = 0
+    LEFT  = 1
 
 class Actor(object):
     texture = None
@@ -26,6 +29,7 @@ class Actor(object):
     bounce_holdoff = 1000
     def __init__(self,pos):
         self.tc             = globals.atlas.TextureSpriteCoords('%s.png' % self.texture)
+        self.tc_left        = [self.tc[i] for i in (3,2,1,0)]
         self.quad           = drawing.Quad(globals.quad_buffer,tc = self.tc)
         self.size           = Point(self.width,self.height)
         self.corners = self.size, Point(-self.size.x,self.size.y), Point(-self.size.x,-self.size.y), Point(self.size.x,-self.size.y)
@@ -49,6 +53,7 @@ class Actor(object):
         self.interacting = None
         self.SetPos(pos)
         self.bounce_allowed = 0
+        self.dir = Dirs.RIGHT
 
         self.set_angle(0)
 
@@ -367,7 +372,7 @@ class SquareActor(Actor):
 
 class Brolly(SquareActor):
     texture = 'brolly_open'
-    arm_offset = Point(-4,6)
+    arm_offset = [Point(-4,6),Point(2,6)]
     width = 31
     height = 37
     collide_centre = Point(0,12)
@@ -376,33 +381,49 @@ class Brolly(SquareActor):
     bounce = True
     def __init__(self, person):
         self.person = person
-        super(Brolly,self).__init__(self.person.pos + self.arm_offset)
+        super(Brolly,self).__init__(self.person.pos + self.arm_offset[Dirs.RIGHT])
 
-    def Update(self,t):
-        diff = globals.mouse_world - self.pos
-        r,a = cmath.polar(diff.x + diff.y*1j)
-        a += math.pi*1.5
-        self.set_angle(a)
+    def Update(self,t,angle_to_mouse):
+
+        self.set_angle(angle_to_mouse)
         #we also want to move it such that the arm thing stays in the same place
-        extra = self.rotate_centre.Rotate(a)
-        self.SetPos(self.person.pos + self.arm_offset + extra)
+        extra = self.rotate_centre.Rotate(self.angle)
+
+        self.SetPos(self.person.pos + self.arm_offset[self.person.dir] + extra)
 
 class Player(SquareActor):
     texture = 'guy_nothing'
     width = 32
     height = 48
-    boat_offset = Point(24,9)
+    boat_offset_right = Point(24,9)
+    boat_offset_left = Point(17,9)
     collide_size = Point(12,24.5).to_float()
     collide_centre = Point(-1,-4)
+    approx_boat_offset = Point(20,9)
     is_player = True
     def __init__(self, boat):
         self.boat = boat
+        self.boat_offset = self.boat_offset_right
         super(Player,self).__init__(self.boat.pos + self.boat_offset)
+
         self.brolly = Brolly(self)
 
     def Update(self,t):
         self.SetPos(self.boat.pos + self.boat_offset)
-        self.brolly.Update(t)
+        diff = globals.mouse_world - (self.boat.pos + self.approx_boat_offset)
+        r,a = cmath.polar(diff.x + diff.y*1j)
+        a += math.pi*1.5
+        if globals.mouse_world.x > self.boat.pos.x + self.approx_boat_offset.x:
+            if self.dir == Dirs.LEFT:
+                self.boat_offset = self.boat_offset_right
+                self.quad.SetTextureCoordinates(self.tc)
+                self.dir = Dirs.RIGHT
+        else:
+            if self.dir == Dirs.RIGHT:
+                self.quad.SetTextureCoordinates(self.tc_left)
+                self.boat_offset = self.boat_offset_left
+                self.dir = Dirs.LEFT
+        self.brolly.Update(t,a)
 
 class Boat(SquareActor):
     texture = 'boat'

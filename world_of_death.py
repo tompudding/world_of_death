@@ -52,7 +52,7 @@ def main():
         globals.mouse_light_quad = drawing.Quad(globals.temp_mouse_light)
         #globals.mouse_light_quad.SetVertices(Point(0,0),
         #                                         Point(500,500),10)
-        #globals.mouse_light_quad.Disable()
+        globals.mouse_light_quad.Disable()
 
         globals.dirs = globals.types.Directories('resource')
 
