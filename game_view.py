@@ -346,6 +346,9 @@ class GameView(ui.RootElement):
             print 'chose critter',pos
             self.critters.append(actors.Critter(pos))
 
+        self.critters.append(actors.BowCritter(Point(400,120)))
+        self.arrows = []
+
     def StartMusic(self):
         return
         #globals.sounds.stop_talking()
@@ -380,6 +383,10 @@ class GameView(ui.RootElement):
         for critter in self.critters:
             critter.Update(t)
         self.critters = [critter for critter in self.critters if not critter.dead]
+
+        for arrow in self.arrows:
+            arrow.Update(t)
+        self.arrows = [arrow for arrow in self.arrows if not arrow.dead]
 
         self.viewpos.pos.x = self.boat.pos.x - globals.screen_showing.x/2
 

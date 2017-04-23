@@ -65,6 +65,9 @@ class Actor(object):
         self.track_quads = []
         self.last_track = 0
 
+    def possible_collision(self, other, amount):
+        pass
+
     def mid_point(self):
         return self.pos + (self.size/2).Rotate(self.angle)
 
@@ -153,52 +156,7 @@ class Actor(object):
         #check for collisions
         for other in globals.aabb.nearby(self):
             #print other.pos,'near',self.pos
-            if other.is_player:
-                #handle this separate
-                if self.been_hit:
-                    #we can't hurt the player if we've been hit
-                    continue
-                p = self.pos + amount
-                #p = self.pos
-                #probe = p + ((other.pos - p).unit_vector()*self.radius)
-                probe = self.pos
-                if other.is_inside(probe):
-                    self.snacking = True
-                    self.done_snacking = globals.time + self.snacking_time
-                    self.start_snacking = globals.time
-                    self.player_offset = self.pos - other.pos
-                    other.add_snacking(self)
-                continue
-
-            if self.dead or other.dead:
-                continue
-
-            if other.bounce:
-                if other.up and globals.time > self.bounce_allowed and not self.on_boat:
-                    #we should bounce off this
-                    p = self.pos + amount
-                    diff = other.pos - p
-                    diff_uv = diff.unit_vector()
-                    probe = p + (diff_uv*self.radius)
-                    if other.is_inside(probe):
-                        #What angle will we send the critter off at? take the brolly as a circle
-                        #and ping it off at the normal
-                        self.move_speed = (diff_uv * self.move_speed.length())*-1
-                        self.bounce_allowed = globals.time + self.bounce_holdoff
-                continue
-
-            #All these mobile things are helpfull just little spheres, so collision detection is easy
-            distance = other.pos - (self.pos + amount)
-            if distance.SquareLength() < self.radius_square + other.radius_square and not self.snacking and not other.snacking:
-                print self,'collided with',other,other.dead,self.dead
-                t = self.move_speed
-                self.move_speed = other.move_speed
-                other.move_speed = t
-                #self.move_direction = other.move_direction = 0
-                #also need to move them so they don't overlap
-                overlap = self.radius + other.radius - distance.length()
-                adjust = distance.unit_vector()*-overlap
-                amount += adjust*0.1
+            self.possible_collision(other, amount)
 
         #if globals.game_view.boat.is_inside(self.pos):
         #    print 'hit boat!'
@@ -717,6 +675,55 @@ class Critter(Actor):
         self.quad.Delete()
         self.dead = True
 
+    def possible_collision(self, other, amount):
+        if other.is_player:
+            #handle this separate
+            if self.been_hit:
+                #we can't hurt the player if we've been hit
+                return
+            p = self.pos + amount
+            #p = self.pos
+            #probe = p + ((other.pos - p).unit_vector()*self.radius)
+            probe = self.pos
+            if other.is_inside(probe):
+                self.snacking = True
+                self.done_snacking = globals.time + self.snacking_time
+                self.start_snacking = globals.time
+                self.player_offset = self.pos - other.pos
+                other.add_snacking(self)
+            return
+
+        if self.dead or other.dead:
+            return
+
+        if other.bounce:
+            if other.up and globals.time > self.bounce_allowed and not self.on_boat:
+                #we should bounce off this
+                p = self.pos + amount
+                diff = other.pos - p
+                diff_uv = diff.unit_vector()
+                probe = p + (diff_uv*self.radius)
+                if other.is_inside(probe):
+                    #What angle will we send the critter off at? take the brolly as a circle
+                    #and ping it off at the normal
+                    self.move_speed = (diff_uv * self.move_speed.length())*-1
+                    self.bounce_allowed = globals.time + self.bounce_holdoff
+            return
+
+        #All these mobile things are helpfull just little spheres, so collision detection is easy
+        distance = other.pos - (self.pos + amount)
+        if distance.SquareLength() < self.radius_square + other.radius_square and not self.snacking and not other.snacking:
+            print self,'collided with',other,other.dead,self.dead
+            t = self.move_speed
+            self.move_speed = other.move_speed
+            other.move_speed = t
+            #self.move_direction = other.move_direction = 0
+            #also need to move them so they don't overlap
+            overlap = self.radius + other.radius - distance.length()
+            adjust = distance.unit_vector()*-overlap
+            amount += adjust*0.1
+
+
     def Update(self,t):
         #self.light.Update(t)
         if self.dead:
@@ -770,7 +777,7 @@ class Critter(Actor):
                     past = self.pos.x > player.pos.x
                 else:
                     past = self.pos.x < player.pos.x
-                if past and not self.snacking and not self.been_hit:
+                if past and not self.snacking and not self.been_hit and (self.pos - player.pos).length() < 20:
                     #we're on the boat and not snacking after going past the player, likely this is a bug,
                     #so hax!
                     print 'hax'
@@ -843,3 +850,68 @@ class Critter(Actor):
 
             self.move_speed = Point(distance/(fall_time*globals.time_step),start_speed_y)
             self.jumping = True
+
+class Arrow(Actor):
+    texture = 'arrow'
+    width = 6
+    height = 16
+    max_speed = 100
+    max_square_speed = max_speed**2
+
+    def __init__(self, parent, pos, dir, speed):
+        super(Arrow,self).__init__(pos)
+        self.parent = parent
+        self.move_direction = dir
+        self.move_speed = speed
+
+    def Update(self, t):
+        super(Arrow,self).Update(t)
+        r,a = cmath.polar(self.move_speed.x + self.move_speed.y*1j)
+        a = (a + math.pi*1.5)%(2*math.pi)
+        self.corners_polar  = [(p.length(),a + self.polar_offsets[i]) for i,p in enumerate(self.corners)]
+        cnums = [cmath.rect(r,a) for (r,a) in self.corners_polar]
+        self.corners_euclid = [Point(c.real,c.imag) for c in cnums]
+        self.SetPos(self.pos)
+
+class BowCritter(Critter):
+    shooting_range = 300
+    fire_cooldown = 2000
+
+    def __init__(self, pos):
+        super(BowCritter, self).__init__(pos)
+        self.fire_time = 0
+
+    def Update(self,t):
+        if self.dead:
+            return
+        boat = globals.game_view.boat
+        player = globals.game_view.player
+
+        distance = player.pos.x - self.pos.x
+        if abs(distance) < self.shooting_range and globals.time > self.fire_time:
+            print 'Start shoot boom',globals.time
+            #player = boat
+            target = player.pos
+            gravity = -1
+            fall_distance = -(self.pos.y - target.y)
+            start_speed_y = -5 + random.random()*10
+            a = gravity
+            try:
+                fall_time = (math.sqrt(start_speed_y**2 + 2*a*fall_distance) - start_speed_y) / a
+            except ValueError:
+                fall_time = -1
+            x = (-math.sqrt(start_speed_y**2 + 2*a*fall_distance) - start_speed_y) / a
+
+            fall_time = max(fall_time,x)/globals.time_step
+
+            #What position will the boat be in at that time?
+            boat_pos_future = target.x + boat.move_speed.x*fall_time*globals.time_step
+            #print 'boat_pos guess',boat_pos_future,player.pos.x
+            #Now we just need to choose our x speed to arrive there at that time
+            distance = boat_pos_future - self.pos.x
+
+            arrow = Arrow(self, pos=self.pos, dir = Point(0,gravity), speed = Point(distance/(fall_time*globals.time_step),start_speed_y))
+            globals.game_view.arrows.append(arrow)
+            self.fire_time = globals.time + self.fire_cooldown
+
+

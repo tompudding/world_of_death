@@ -5,5 +5,6 @@ resource/sprites/guy_pipe.png:resource/tiles_atlas_0.png:64:53.0:32:48
 resource/sprites/brolly_closed.png:resource/tiles_atlas_0.png:96:64.0:31:37
 resource/sprites/brolly_open.png:resource/tiles_atlas_0.png:0:16.0:31:37
 resource/sprites/tile.png:resource/tiles_atlas_0.png:31:21.0:32:32
-resource/sprites/critter_snack.png:resource/tiles_atlas_0.png:108:112.0:16:16
-resource/sprites/basic_critter.png:resource/tiles_atlas_0.png:0:0.0:16:16
+resource/sprites/basic_critter.png:resource/tiles_atlas_0.png:108:112.0:16:16
+resource/sprites/critter_snack.png:resource/tiles_atlas_0.png:0:0.0:16:16
+resource/sprites/arrow.png:resource/tiles_atlas_0.png:16:0.0:6:16
