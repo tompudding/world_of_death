@@ -409,7 +409,7 @@ class Player(SquareActor):
         self.brolly = Brolly(self)
 
     def Update(self,t):
-        self.SetPos(self.boat.pos + self.boat_offset)
+
         diff = globals.mouse_world - (self.boat.pos + self.approx_boat_offset)
         r,a = cmath.polar(diff.x + diff.y*1j)
         a += math.pi*1.5
@@ -423,6 +423,7 @@ class Player(SquareActor):
                 self.quad.SetTextureCoordinates(self.tc_left)
                 self.boat_offset = self.boat_offset_left
                 self.dir = Dirs.LEFT
+        self.SetPos(self.boat.pos + self.boat_offset)
         self.brolly.Update(t,a)
 
 class Boat(SquareActor):
