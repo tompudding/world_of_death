@@ -408,12 +408,14 @@ class Brolly(SquareActor):
         self.quad.Enable()
         self.level = 5
 
-    def finish_swinging(self):
+    def swing(self):
         self.swinging = False
+
+    def finish_swinging(self):
         self.quad.Disable()
 
     def Update(self,t,angle_to_mouse):
-        if self.up:
+        if self.up or not self.swinging:
             self.set_angle(angle_to_mouse)
         elif self.swinging:
             self.set_angle(angle_to_mouse + math.pi)
@@ -434,6 +436,7 @@ class Player(SquareActor):
     is_player = True
     brolly_up_time = 200
     brolly_down_time = 500
+    brolly_swing_time = 400
 
     class Status:
         BROLLY_UP = 0
@@ -463,11 +466,15 @@ class Player(SquareActor):
         if self.target_status != self.status:
             #we want to change!
             if globals.time > self.brolly_change_time:
-                self.status = self.target_status
-                if self.status == Player.Status.BROLLY_UP:
+
+                if self.target_status == Player.Status.BROLLY_UP:
                     self.brolly.put_up()
-                else:
+                elif self.target_status == Player.Status.BROLLY_DOWN:
                     self.brolly.put_down()
+
+                if self.status == Player.Status.BROLLY_SWING:
+                    print 'Swing!'
+                self.status = self.target_status
 
                 self.quad.SetTextureCoordinates(self.tc[self.status][self.dir])
 
@@ -505,9 +512,6 @@ class Player(SquareActor):
 
 
     def put_brolly_down(self):
-        # self.status = Player.Status.BROLLY_DOWN
-        # self.brolly.put_down()
-        # self.quad.SetTextureCoordinates(self.tc[self.status][self.dir])
         if self.status != Player.Status.BROLLY_UP:
             return
         #we've currently got it down but we want it up
@@ -529,9 +533,10 @@ class Player(SquareActor):
         if self.status != Player.Status.BROLLY_SWING:
             return
         if self.brolly.swinging:
-            self.brolly.finish_swinging()
-        self.target_status = self.status = Player.Status.BROLLY_DOWN
-        self.quad.SetTextureCoordinates(self.tc[self.status][self.dir])
+            self.brolly.swing()
+        self.target_status = Player.Status.BROLLY_DOWN
+        self.brolly_change_time = globals.time + self.brolly_swing_time
+        #self.quad.SetTextureCoordinates(self.tc[self.status][self.dir])
 
 class Boat(SquareActor):
     texture = 'boat'
