@@ -1029,7 +1029,6 @@ class Drop(Actor):
                     self.kill()
 
 
-
     def Update(self, t):
         elapsed = super(Drop,self).Update(t)
 
@@ -1052,7 +1051,18 @@ class BowCritter(Critter):
         self.fire_time = 0
 
     def possible_collision(self, other, amount):
-        pass
+        if other.bounce:
+            if other.up:
+                p = self.pos + amount
+                diff = other.pos - p
+                diff_uv = diff.unit_vector()
+                probe = p + (diff_uv*self.radius)
+                if other.is_inside(probe):
+                    #What angle will we send the critter off at? take the brolly as a circle
+                    #and ping it off at the normal
+                    self.move_speed = (diff_uv * self.move_speed.length())*-1
+                    self.move_direction = Point(0,-1)
+
 
     def Update(self,t):
         if self.dead:
@@ -1061,6 +1071,10 @@ class BowCritter(Critter):
         player = globals.game_view.player
 
         self.Move(t)
+
+        if self.pos.x < globals.game_view.viewpos.pos.x - 20:
+            self.kill()
+            return
 
         distance = player.pos.x - self.pos.x
         if abs(distance) < self.shooting_range and globals.time > self.fire_time:
@@ -1091,16 +1105,13 @@ class BowCritter(Critter):
             globals.game_view.arrows.append(arrow)
             self.fire_time = globals.time + self.fire_cooldown
 
-class RockCritter(Critter):
+class RockCritter(BowCritter):
     fire_cooldown = 1000
     object_class = Rock
 
     def __init__(self, pos):
-        super(RockCritter, self).__init__(pos)
+        super(BowCritter, self).__init__(pos)
         self.fire_time = None
-
-    def possible_collision(self, other, amount):
-        pass
 
     def Update(self,t):
         if self.dead:

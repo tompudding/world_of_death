@@ -653,7 +653,41 @@ class GameView(ui.RootElement):
             #print 'chose critter',pos
             self.critters.append(actors.Critter(pos))
         self.level_end = x_0 + 1000
+        self.next_level = self.level_five
+
+    def level_five(self):
+
+        x_0 = self.viewpos.pos.x + globals.screen_showing.x
+        for i in xrange(10):
+            self.critters.append(actors.RockCritter(Point(x_0+i*16,140)))
+        x_0 += 8*16
+
+        for i in xrange(10):
+            self.critters.append(actors.RockCritter(Point(x_0+500+i*16,140)))
+
+        self.tutorial_text.SetText("It's a world of laughter, a world of tears. It's a world of hope and a world of FEEAAARRRSS!")
+        self.text_end = globals.time + 2000
+        self.boat.move_direction = Point(0.2,0)
+        for light in globals.lights:
+            light.on = False
+            self.timeofday.Set(0.0)
+            self.flicker_start = globals.time
+            self.flicker_end = globals.time + 300000
+
+        for i in xrange(30):
+            x = x_0 + random.random()*1000
+            y = 120 + random.random()*120
+            pos = Point(x,y)
+            while any( ((pos - critter.pos).length() < 20) for critter in self.critters):
+                #print 'skipping critter at',pos
+                x = x_0 + random.random()*1000
+                y = 120 + random.random()*120
+                pos = Point(x,y)
+            #print 'chose critter',pos
+            self.critters.append(actors.Critter(pos))
+        self.level_end = x_0 + 1000
         self.next_level = self.win_game
+
 
     def win_game(self):
         self.game_over = True
@@ -708,7 +742,7 @@ class GameView(ui.RootElement):
             self.last_level = self.next_level
             self.next_level()
         if key == pygame.K_x:
-            self.win_game()
+            self.GameOver()
         if key == pygame.K_DELETE:
             if self.music_playing:
                 self.music_playing = False
