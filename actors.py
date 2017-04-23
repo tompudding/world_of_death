@@ -162,10 +162,13 @@ class Actor(object):
                 if globals.time > self.bounce_allowed:
                     #we should bounce off this
                     p = self.pos + amount
-                    probe = p + ((other.pos - p).unit_vector()*self.radius)
-                    if other.is_inside(probe) or other.is_inside(self.pos):
-                        print self,'hit brolly'
-                        self.move_speed *= -1
+                    diff = other.pos - p
+                    diff_uv = diff.unit_vector()
+                    probe = p + (diff_uv*self.radius)
+                    if other.is_inside(probe):
+                        #What angle will we send the critter off at? take the brolly as a circle
+                        #and ping it off at the normal
+                        self.move_speed = (diff_uv * self.move_speed.length())*-1
                         self.bounce_allowed = globals.time + self.bounce_holdoff
                 continue
 
@@ -383,8 +386,17 @@ class Brolly(SquareActor):
         self.person = person
         super(Brolly,self).__init__(self.person.pos + self.arm_offset[Dirs.RIGHT])
 
-    def Update(self,t,angle_to_mouse):
+    def put_up(self):
+        self.up = True
+        self.quad.Enable()
 
+    def put_down(self):
+        self.up = False
+        self.quad.Disable()
+
+    def Update(self,t,angle_to_mouse):
+        if not self.up:
+            return
         self.set_angle(angle_to_mouse)
         #we also want to move it such that the arm thing stays in the same place
         extra = self.rotate_centre.Rotate(self.angle)
@@ -392,7 +404,7 @@ class Brolly(SquareActor):
         self.SetPos(self.person.pos + self.arm_offset[self.person.dir] + extra)
 
 class Player(SquareActor):
-    texture = 'guy_nothing'
+    texture = 'guy_pipe'
     width = 32
     height = 48
     boat_offset_right = Point(24,9)
@@ -401,12 +413,22 @@ class Player(SquareActor):
     collide_centre = Point(-1,-4)
     approx_boat_offset = Point(20,9)
     is_player = True
+    class Status:
+        BROLLY_UP = 0
+        BROLLY_DOWN = 1
+
     def __init__(self, boat):
         self.boat = boat
         self.boat_offset = self.boat_offset_right
         super(Player,self).__init__(self.boat.pos + self.boat_offset)
 
+        tc_brolly = globals.atlas.TextureSpriteCoords('guy_nothing.png')
+        tc_brolly_left = [tc_brolly[i] for i in (3,2,1,0)]
+        self.status = Player.Status.BROLLY_DOWN
+        self.tc = [ [tc_brolly,tc_brolly_left],[self.tc, self.tc_left] ]
+
         self.brolly = Brolly(self)
+        self.brolly.put_down()
 
     def Update(self,t):
 
@@ -416,15 +438,27 @@ class Player(SquareActor):
         if globals.mouse_world.x > self.boat.pos.x + self.approx_boat_offset.x:
             if self.dir == Dirs.LEFT:
                 self.boat_offset = self.boat_offset_right
-                self.quad.SetTextureCoordinates(self.tc)
                 self.dir = Dirs.RIGHT
+                self.quad.SetTextureCoordinates(self.tc[self.status][self.dir])
+
         else:
             if self.dir == Dirs.RIGHT:
-                self.quad.SetTextureCoordinates(self.tc_left)
-                self.boat_offset = self.boat_offset_left
                 self.dir = Dirs.LEFT
+                self.boat_offset = self.boat_offset_left
+                self.quad.SetTextureCoordinates(self.tc[self.status][self.dir])
+
         self.SetPos(self.boat.pos + self.boat_offset)
         self.brolly.Update(t,a)
+
+    def put_brolly_up(self):
+        self.status = Player.Status.BROLLY_UP
+        self.brolly.put_up()
+        self.quad.SetTextureCoordinates(self.tc[self.status][self.dir])
+
+    def put_brolly_down(self):
+        self.status = Player.Status.BROLLY_DOWN
+        self.brolly.put_down()
+        self.quad.SetTextureCoordinates(self.tc[self.status][self.dir])
 
 class Boat(SquareActor):
     texture = 'boat'
