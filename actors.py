@@ -299,7 +299,7 @@ class Boat(Actor):
     texture = 'boat'
     width = 108
     height = 27
-    water_height = 10
+    water_height = 9
     max_speed = 3
     max_square_speed = max_speed**2
 
@@ -313,13 +313,13 @@ class Boat(Actor):
         if not elapsed:
             return
         #we update our angle based on the water height at our ends
-        water_height = self.water.get_height(self.pos.x + self.size.x/2)
+        water_height = self.water.get_height(self.pos.x)
         new_pos = water_height + self.water_height
 
         #print 'md',self.move_direction
 
         #print 'boat',self.pos.x,self.pos.x+self.size.x, new_pos, self.move_direction
-        self.move_direction.y = (new_pos - self.pos.y) * elapsed
+        self.move_direction.y = (new_pos - self.pos.y) * elapsed * 0.5
         #friction for the water
         self.move_speed.x -= self.move_speed.x * 0.2 * elapsed
 

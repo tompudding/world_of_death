@@ -78,8 +78,8 @@ class Background(object):
                 quad.SetVertices(bl,tr,0)
 
 class Spring(object):
-    k = 0.03
-    damping = 0.0025
+    k = 0.1
+    damping = 0.025
     def __init__(self, x, y):
         self.target_height = y
 
@@ -119,7 +119,7 @@ class Trapezoid(object):
                                        self.right_spring.bottom, 10 )
 
 class Water(object):
-    spread = 0.05
+    spread = 0.01
     spacing = 15
     def __init__(self, parent, height):
         self.parent = parent
