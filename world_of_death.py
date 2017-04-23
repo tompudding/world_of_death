@@ -46,6 +46,7 @@ def main():
         globals.sounds                = sounds.Sounds()
         globals.zoom_scale            = None
         globals.time_step             = 0.02
+        globals.mouse_world = Point(0,0)
 
         #WTF?
         globals.mouse_light_quad = drawing.Quad(globals.temp_mouse_light)

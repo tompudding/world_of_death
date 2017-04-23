@@ -367,18 +367,25 @@ class SquareActor(Actor):
 
 class Brolly(SquareActor):
     texture = 'brolly_open'
-    arm_offset = Point(-3,20)
+    arm_offset = Point(-4,6)
     width = 31
     height = 37
     collide_centre = Point(0,12)
     collide_size = Point(31,12)
+    rotate_centre = Point(0,17)
     bounce = True
     def __init__(self, person):
         self.person = person
         super(Brolly,self).__init__(self.person.pos + self.arm_offset)
 
     def Update(self,t):
-        self.SetPos(self.person.pos + self.arm_offset)
+        diff = globals.mouse_world - self.pos
+        r,a = cmath.polar(diff.x + diff.y*1j)
+        a += math.pi*1.5
+        self.set_angle(a)
+        #we also want to move it such that the arm thing stays in the same place
+        extra = self.rotate_centre.Rotate(a)
+        self.SetPos(self.person.pos + self.arm_offset + extra)
 
 class Player(SquareActor):
     texture = 'guy_nothing'
