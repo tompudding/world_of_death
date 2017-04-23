@@ -352,7 +352,7 @@ class SquareActor(Actor):
 
 
 class Player(SquareActor):
-    texture = 'guy_pipe'
+    texture = 'guy_nothing'
     width = 32
     height = 48
     boat_offset = Point(24,9)
