@@ -88,6 +88,8 @@ class Actor(object):
             globals.aabb.remove(self)
 
     def add_to_map(self):
+        if self.dead:
+            return
         globals.aabb.add(self)
 
     def SetPos(self,pos):
@@ -391,6 +393,7 @@ class Brolly(SquareActor):
         self.open_tc = self.tc
         self.closed_tc = globals.atlas.TextureSpriteCoords('brolly_closed.png')
         self.tc = self.closed_tc
+        self.murder = False
 
     def put_up(self):
         self.up = True
@@ -411,6 +414,36 @@ class Brolly(SquareActor):
     def swing(self):
         self.swinging = False
 
+    def start_murder(self):
+        self.murder = True
+
+    def do_murder(self):
+        #We've just swung the brolly like a bat. Let's check if there are any critters to squish
+        tip = self.pos + (self.rotate_centre).Rotate(self.angle)
+
+        for critter in globals.aabb.nearby(self):
+            if critter is self.person:
+                continue
+            #There are two points of interest; the tip and base of the brolly. Anything too close to those
+            #or the line that joins them are in for a bad time
+
+            #If we rotate the critter pos by the inverse of our angle we can do a simple rectangle check
+            #for if it's near our line
+            diff = critter.pos - self.pos
+            v = diff.Rotate(-self.angle)
+            print 'maybe hit',v
+            if abs(v.x) > 15:
+                #out of range
+                continue
+            if abs(v.y) > 25:
+                continue
+            #print 'hit',diff
+            #Send this guy flying in the direction we swung
+            #thrust = cmath.rect(-10,self.angle + math.pi*0.5)
+            critter.move_speed += (diff.unit_vector() * 30)
+
+
+
     def finish_swinging(self):
         self.quad.Disable()
 
@@ -423,6 +456,9 @@ class Brolly(SquareActor):
         extra = self.rotate_centre.Rotate(self.angle)
 
         self.SetPos(self.person.pos + self.arm_offset[self.person.dir] + extra)
+        if self.murder:
+            self.murder = False
+            self.do_murder()
 
 class Player(SquareActor):
     texture = 'guy_pipe'
@@ -432,10 +468,10 @@ class Player(SquareActor):
     boat_offset_left = Point(17,9)
     collide_size = Point(12,24.5).to_float()
     collide_centre = Point(-1,-4)
-    approx_boat_offset = Point(20,9)
+    approx_boat_offset = Point(20,13)
     is_player = True
     brolly_up_time = 200
-    brolly_down_time = 500
+    brolly_down_time = 300
     brolly_swing_time = 400
 
     class Status:
@@ -472,8 +508,6 @@ class Player(SquareActor):
                 elif self.target_status == Player.Status.BROLLY_DOWN:
                     self.brolly.put_down()
 
-                if self.status == Player.Status.BROLLY_SWING:
-                    print 'Swing!'
                 self.status = self.target_status
 
                 self.quad.SetTextureCoordinates(self.tc[self.status][self.dir])
@@ -536,6 +570,7 @@ class Player(SquareActor):
             self.brolly.swing()
         self.target_status = Player.Status.BROLLY_DOWN
         self.brolly_change_time = globals.time + self.brolly_swing_time
+        self.brolly.start_murder()
         #self.quad.SetTextureCoordinates(self.tc[self.status][self.dir])
 
 class Boat(SquareActor):

@@ -146,8 +146,11 @@ class Water(object):
         j = i + 1
         partial = float(offset % self.spacing) / self.spacing
 
-        left_height = self.springs[i].top.y
-        right_height = self.springs[j].top.y
+        try:
+            left_height = self.springs[i].top.y
+            right_height = self.springs[j].top.y
+        except IndexError:
+            return 0
 
         return left_height + (right_height - left_height) * partial
 
@@ -265,11 +268,11 @@ class AxisAlignedBoundingBoxes(object):
         #return all the actors that share locations with the given actor
         if actor not in self.locations_per_actor:
             return []
-        out = []
+        out = set()
         for x,y in self.locations_per_actor[actor]:
             for other in self.grid[x][y].actors:
                 if other is not actor:
-                    out.append(other)
+                    out.add(other)
         return out
 
 class GameView(ui.RootElement):
@@ -358,7 +361,7 @@ class GameView(ui.RootElement):
         self.boat.Update(t)
         self.player.Update(t)
         for critter in self.critters:
-          critter.Update(t)
+            critter.Update(t)
         self.critters = [critter for critter in self.critters if not critter.dead]
 
         self.viewpos.pos.x = self.boat.pos.x - globals.screen_showing.x/2
@@ -372,6 +375,7 @@ class GameView(ui.RootElement):
 
         globals.mouse_world = self.viewpos.pos + self.mouse_pos
         #print globals.mouse_world, self.player.brolly.is_inside(globals.mouse_world)
+        #print 'mw:',globals.mouse_world
 
     def GameOver(self):
         self.game_over = True
