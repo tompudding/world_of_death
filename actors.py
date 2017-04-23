@@ -514,6 +514,11 @@ class Player(SquareActor):
         self.brolly = Brolly(self)
         self.brolly.put_down()
         self.snackers = []
+        self.health = 100
+
+    def damage(self, amount):
+        self.health -= amount
+        print 'health',self.health
 
     def add_snacking(self, critter):
         self.snackers.append(critter)
@@ -594,6 +599,10 @@ class Player(SquareActor):
         self.target_status = Player.Status.BROLLY_DOWN
         self.brolly_change_time = globals.time + self.brolly_swing_time
         self.brolly.start_murder()
+        #At this point we can kill anything snacking on us
+        for critter in self.snackers:
+            critter.kill()
+        self.snackers = []
         #self.quad.SetTextureCoordinates(self.tc[self.status][self.dir])
 
 class Boat(SquareActor):
@@ -683,6 +692,7 @@ class Critter(Actor):
     max_speed = 100
     max_square_speed = max_speed**2
     snacking_time = 4000
+    snack_damage = 2
 
     def __init__(self, pos):
         super(Critter,self).__init__(pos)
@@ -697,6 +707,7 @@ class Critter(Actor):
         self.start_snacking = 0
         self.snacking = False
         self.snacking_tc = globals.atlas.TextureSpriteCoords('critter_snack.png')
+        self.snack_pos = 0
 
 
     def kill(self):
@@ -721,9 +732,15 @@ class Critter(Actor):
             self.SetPos(player.pos + self.player_offset)
             #Move it up and down
             if (elapsed % 200) > 100:
-                vertices = [v + Point(0,2) for v in self.vertices]
+                if self.snack_pos == 0:
+                    vertices = [v + Point(0,2) for v in self.vertices]
+                    player.damage(self.snack_damage)
+                    self.snack_pos = 1
+                else:
+                    vertices = self.vertices
             else:
                 vertices = self.vertices
+                self.snack_pos = 0
             self.quad.SetAllVertices(vertices, self.level)
             self.quad.SetTextureCoordinates(self.snacking_tc)
             return
@@ -739,7 +756,7 @@ class Critter(Actor):
                     self.move_direction = Point(0,0)
 
                     self.splashed = True
-            else:
+            elif not self.been_hit:
                 #We're on the boat!
                 #let's walk towards the player
                 #elapsed = (globals.time - self.last_update)*globals.time_step
@@ -747,6 +764,25 @@ class Critter(Actor):
                 #player_dir = (player.pos - self.pos).unit_vector() * 0.1 * elapsed
                 #self.boat_offset += player_dir
                 #self.SetPos(boat.pos + self.boat_offset)
+                self.Move(t)
+                if self.move_speed.x > 0:
+                    past = self.pos.x > player.pos.x
+                else:
+                    past = self.pos.x < player.pos.x
+                if past and not self.snacking and not self.been_hit:
+                    #we're on the boat and not snacking after going past the player, likely this is a bug,
+                    #so hax!
+                    print 'hax'
+                    self.snacking = True
+                    self.done_snacking = globals.time + self.snacking_time
+                    self.start_snacking = globals.time
+                    self.player_offset = self.pos - player.pos
+                    player.add_snacking(self)
+
+                if self.pos.y > 80:
+                    self.splashed = False
+            else:
+                self.move_direction = Point(0,-1)
                 self.Move(t)
                 if self.pos.y > 80:
                     self.splashed = False
@@ -773,9 +809,12 @@ class Critter(Actor):
             #self.start_jump = globals.time
         elif globals.time > self.start_jump and not self.jumping:
             print 'Start jump boom',globals.time
-            player = boat
+            #player = boat
+            boat_back = boat.pos - boat.size/2
+            boat_front = boat.pos + boat.size/2
+            target = random.choice([boat_back, player.pos, boat_front])
             gravity = -1
-            fall_distance = -(self.pos.y - player.pos.y)
+            fall_distance = -(self.pos.y - target.y)
             start_speed_y = random.random()*10
             a = gravity
             try:
@@ -787,11 +826,11 @@ class Critter(Actor):
             fall_time = max(fall_time,x)/globals.time_step
 
             #Their estimate of the fall time should not be perfect
-            fall_time = 0.7*fall_time + 0.3*fall_time*random.random()
+            #fall_time = 0.7*fall_time + 0.3*fall_time*random.random()
 
             #print 'guess at',globals.time + fall_time
             #What position will the boat be in at that time?
-            boat_pos_future = player.pos.x + boat.move_speed.x*fall_time*globals.time_step
+            boat_pos_future = target.x + boat.move_speed.x*fall_time*globals.time_step
             #print 'boat_pos guess',boat_pos_future,player.pos.x
             #Now we just need to choose our x speed to arrive there at that time
             distance = boat_pos_future - self.pos.x
@@ -799,7 +838,7 @@ class Critter(Actor):
             self.move_direction = Point(0,gravity)
 
             #s = ut + 1/2*a*t*t =>
-            start_speed_y = start_speed_y * 0.8 + random.random() * start_speed_y * 0.2
+            #start_speed_y = start_speed_y * 0.8 + random.random() * start_speed_y * 0.2
 
             self.move_speed = Point(distance/(fall_time*globals.time_step),start_speed_y)
             self.jumping = True
