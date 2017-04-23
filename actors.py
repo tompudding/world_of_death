@@ -443,9 +443,11 @@ class Brolly(SquareActor):
             #print 'hit',diff
             #Send this guy flying in the direction we swung
             #thrust = cmath.rect(-10,self.angle + math.pi*0.5)
-            critter.move_speed.x += (diff.unit_vector().x * 20)
+            critter.move_speed.x += (diff.unit_vector().x * 15)
             #always knock them up for fun
-            critter.move_speed.y += 20
+            critter.move_speed.y += 10
+            #renable gravity if it were turned off
+            critter.move_direction = Point(0,-1)
 
 
 
@@ -693,6 +695,7 @@ class Critter(Actor):
                     self.boat_offset = self.pos - boat.pos
                     self.move_speed = Point( ((player.pos - self.pos).unit_vector() * 2).x,0)
                     self.move_direction = Point(0,0)
+                    self.splashed = True
             else:
                 #We're on the boat!
                 #let's walk towards the player
@@ -702,7 +705,9 @@ class Critter(Actor):
                 #self.boat_offset += player_dir
                 #self.SetPos(boat.pos + self.boat_offset)
                 self.Move(t)
-                self.splashed = True
+                if self.pos.y > 80:
+                    self.splashed = False
+
             if self.dead:
                 return
 
