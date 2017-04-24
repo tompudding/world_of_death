@@ -163,7 +163,6 @@ class Actor(object):
 
         #check for collisions
         for other in globals.aabb.nearby(self):
-            #print other.pos,'near',self.pos
             self.possible_collision(other, amount)
 
         #if globals.game_view.boat.is_inside(self.pos):
@@ -489,7 +488,6 @@ class Player(SquareActor):
 
     def damage(self, amount):
         super(Player,self).damage(amount)
-        print 'health',self.health
         globals.game_view.health_display.set_health(float(self.health) / self.initial_health)
         globals.game_view.viewpos.ScreenShake(amount, 400)
 
@@ -954,6 +952,8 @@ class Arrow(Actor):
         cnums = [cmath.rect(r,a) for (r,a) in self.corners_polar]
         self.corners_euclid = [Point(c.real,c.imag) for c in cnums]
         self.SetPos(self.pos)
+        if self.pos.y < 0:
+            self.kill()
 
 
 class Rock(Actor):

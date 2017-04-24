@@ -281,6 +281,8 @@ class AxisAlignedBoundingBoxes(object):
 
         for x in xrange(bl.x, tr.x + 1):
             for y in xrange(bl.y, tr.y + 1):
+                if x < 0 or y < 0:
+                    continue
                 try:
                     self.grid[x][y].add(actor)
                 except IndexError:
@@ -293,6 +295,8 @@ class AxisAlignedBoundingBoxes(object):
     def remove(self, actor):
         try:
             for x,y in self.locations_per_actor[actor]:
+                if x < 0 or y < 0:
+                    continue
                 self.grid[x][y].remove(actor)
         except KeyError:
             pass
@@ -304,6 +308,8 @@ class AxisAlignedBoundingBoxes(object):
             return []
         out = set()
         for x,y in self.locations_per_actor[actor]:
+            if x < 0 or y < 0:
+                continue
             for other in self.grid[x][y].actors:
                 if other is not actor:
                     out.add(other)
@@ -432,6 +438,12 @@ class GameView(ui.RootElement):
             c.kill()
         self.critters = []
         self.viewpos.reset()
+        self.player.dead = False
+        #self.viewpos.pos = Point(0,0)
+        #self.boat.pos = Point(globals.screen_showing.x /2 ,self.water_height)
+        for c in self.arrows:
+            c.kill()
+        self.arrows = []
 
 
     def tutorial_swing_brolly(self):
