@@ -67,6 +67,8 @@ class Actor(object):
 
     def kill(self):
         globals.aabb.remove(self)
+        if self.snacking:
+            globals.sounds.chomp.stop()
         self.quad.Disable()
         self.quad.Delete()
         self.dead = True
@@ -376,6 +378,7 @@ class Brolly(SquareActor):
         self.quad.SetTextureCoordinates(self.open_tc)
         self.quad.Enable()
         self.level = 3.5
+        globals.sounds.brolly_open.play()
 
     def put_down(self):
         self.up = False
@@ -396,7 +399,7 @@ class Brolly(SquareActor):
     def do_murder(self):
         #We've just swung the brolly like a bat. Let's check if there are any critters to squish
         tip = self.pos + (self.rotate_centre).Rotate(self.angle)
-
+        hits = False
         for critter in globals.aabb.nearby(self):
             if critter is self.person:
                 continue
@@ -422,6 +425,9 @@ class Brolly(SquareActor):
             #renable gravity if it were turned off
             critter.move_direction = Point(0,-1)
             critter.been_hit = True
+            hits = True
+        if hits:
+            globals.sounds.donk.play()
 
 
 
@@ -718,6 +724,7 @@ class Critter(Actor):
                     #and ping it off at the normal
                     self.move_speed = (diff_uv * self.move_speed.length())*-1
                     self.bounce_allowed = globals.time + self.bounce_holdoff
+                    globals.sounds.bounce.play()
             return
 
         #All these mobile things are helpfull just little spheres, so collision detection is easy
@@ -742,6 +749,7 @@ class Critter(Actor):
         if self.snacking:
 
             if globals.time > self.done_snacking:
+                globals.sounds.chomp.stop()
                 self.kill()
                 return
 
@@ -752,6 +760,7 @@ class Critter(Actor):
                 if self.snack_pos == 0:
                     vertices = [v + Point(0,2) for v in self.vertices]
                     player.damage(self.snack_damage)
+
                     self.snack_pos = 1
                 else:
                     vertices = self.vertices
@@ -766,6 +775,7 @@ class Critter(Actor):
             if not self.on_boat:
                 self.Move(t)
                 if boat.is_inside(self.pos) and not self.been_hit:
+                    globals.sounds.splash.play()
                     globals.game_view.water.jiggle(self.pos.x, self.move_speed.y/4)
                     self.on_boat = True
                     self.boat_offset = self.pos - boat.pos
@@ -792,6 +802,7 @@ class Critter(Actor):
                     self.snacking = True
                     self.done_snacking = globals.time + self.snacking_time
                     self.start_snacking = globals.time
+                    globals.sounds.chomp.play()
                     self.player_offset = self.pos - player.pos
                     player.add_snacking(self)
 
@@ -858,6 +869,7 @@ class Critter(Actor):
 
             self.move_speed = Point(distance/(fall_time*globals.time_step),start_speed_y)
             self.jumping = True
+            random.choice(globals.sounds.wee_sounds).play()
 
 class Arrow(Actor):
     texture = 'arrow'

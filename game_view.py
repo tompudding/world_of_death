@@ -189,6 +189,7 @@ class Water(object):
 
     def jiggle(self, x, amount):
         n = int((x - self.left)/self.spacing)
+
         try:
             self.springs[n].velocity += amount
         except IndexError:
@@ -696,6 +697,7 @@ class GameView(ui.RootElement):
 
 
     def win_game(self):
+        self.StartMusic()
         self.game_over = True
         self.won = True
         self.game_over_frame.title.SetText('You win')
@@ -704,6 +706,7 @@ class GameView(ui.RootElement):
         self.game_over_start = globals.time
 
     def GameOver(self):
+        globals.sounds.sw_bad_three.play()
         self.game_over = True
         #self.mode = modes.GameOver(self)
         self.game_over_frame.title.SetText('GAME OVER')
@@ -772,9 +775,9 @@ class GameView(ui.RootElement):
             self.player.put_brolly_up()
         elif button == 1:
             self.player.prepare_brolly_swing()
-        else:
-            self.player.damage(10)
-            self.water.jiggle(globals.mouse_world.x, -10)
+        #else:
+        #    self.player.damage(10)
+        #    self.water.jiggle(globals.mouse_world.x, -10)
 
         if self.mode:
             pos = self.viewpos.full_pos + pos
