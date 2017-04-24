@@ -401,7 +401,7 @@ class GameView(ui.RootElement):
         self.flicker_start = None
         self.last_flicker_period = 0
         self.text_end = None
-        #self.next_level = self.level_three
+
         self.next_level = self.level_one
         self.last_level = self.level_one
         self.level_end = None
@@ -495,13 +495,13 @@ class GameView(ui.RootElement):
                         light.on = random.random() < 0.3
                     self.timeofday.Set(random.choice((0,0.28)))
 
-        if self.water_range and self.water_range < self.viewpos.pos.x:
+        if self.water_range and self.water_range < self.viewpos.pos.x and not self.tutorial:
             #End of the tutorial
             self.level_start_health = self.player.health
             self.last_level = self.next_level
             self.next_level()
 
-        elif self.level_end and self.boat.pos.x > self.level_end or (not self.tutorial and len(self.critters) == 0):
+        if self.level_end and self.boat.pos.x > self.level_end or (not self.tutorial and len(self.critters) == 0):
             print 'end of level!'
             self.level_start_health = self.player.health
             self.last_level = self.next_level
@@ -697,6 +697,7 @@ class GameView(ui.RootElement):
 
 
     def win_game(self):
+        print 'wg'
         self.StartMusic()
         self.game_over = True
         self.won = True
@@ -750,15 +751,15 @@ class GameView(ui.RootElement):
             self.help_text.SetText(' ')
             self.last_level = self.next_level
             self.next_level()
-        if key == pygame.K_x:
-            self.GameOver()
-        if key == pygame.K_DELETE:
-            if self.music_playing:
-                self.music_playing = False
-                pygame.mixer.music.set_volume(0)
-            else:
-                self.music_playing = True
-                pygame.mixer.music.set_volume(globals.music_volume)
+        #if key == pygame.K_x:
+        #    self.GameOver()
+        #if key == pygame.K_DELETE:
+        #    if self.music_playing:
+        #        self.music_playing = False
+        #        pygame.mixer.music.set_volume(0)
+        #    else:
+        #        self.music_playing = True
+        #        pygame.mixer.music.set_volume(globals.music_volume)
         self.mode.KeyUp(key)
 
     def MouseMotion(self,pos,rel,handled):

@@ -461,6 +461,7 @@ class Player(SquareActor):
     brolly_down_time = 100
     brolly_swing_time = 400
     immune_duration = 0
+    min_swing = 200
 
     class Status:
         BROLLY_UP = 0
@@ -568,12 +569,21 @@ class Player(SquareActor):
         self.brolly.prepare_swing()
         self.target_status = self.status = Player.Status.BROLLY_SWING
         self.quad.SetTextureCoordinates(self.tc[self.status][self.dir])
+        self.prepare_start = globals.time
+        globals.sounds.swing_start.play()
 
     def swing_brolly(self):
         if self.status != Player.Status.BROLLY_SWING:
             return
         if self.brolly.swinging:
             self.brolly.swing()
+        if globals.time - self.prepare_start < self.min_swing:
+            self.status = Player.Status.BROLLY_DOWN
+            self.target_status = self.status
+            self.quad.SetTextureCoordinates(self.tc[self.status][self.dir])
+            self.brolly.finish_swinging()
+            return
+        globals.sounds.swing_end.play()
         self.target_status = Player.Status.BROLLY_DOWN
         self.brolly_change_time = globals.time + self.brolly_swing_time
         self.brolly.start_murder()
@@ -775,9 +785,9 @@ class Critter(Actor):
             if not self.on_boat:
                 self.Move(t)
                 if boat.is_inside(self.pos) and not self.been_hit:
-                    globals.sounds.splash.play()
                     globals.game_view.water.jiggle(self.pos.x, self.move_speed.y/4)
                     self.on_boat = True
+                    globals.sounds.thunk.play()
                     self.boat_offset = self.pos - boat.pos
                     self.move_speed = Point( ((player.pos - self.pos).unit_vector() * 2).x,0)
                     self.move_direction = Point(0,0)
@@ -820,6 +830,7 @@ class Critter(Actor):
             if not self.splashed and self.pos.y < 60:
                 water_height = globals.game_view.water.get_height(self.pos.x)
                 if abs(self.pos.y - water_height) < 10:
+                    globals.sounds.splash.play()
                     globals.game_view.water.jiggle(self.pos.x, self.move_speed.y)
                     self.splashed = True
 
@@ -905,6 +916,7 @@ class Arrow(Actor):
                 self.stuck_offset = self.pos - other.pos
                 self.die_time = globals.time + self.max_life
                 other.damage(self.damage_amount)
+                globals.sounds.arrow_hit.play()
             return
 
         if other.bounce:
@@ -919,6 +931,7 @@ class Arrow(Actor):
                     self.die_time = globals.time + self.max_life
                     self.stuck_angle = self.real_angle - other.angle
                     self.stuck_offset = (self.pos - other.pos).Rotate(-self.real_angle)
+                    globals.sounds.arrow_stick.play()
 
     def Update(self, t):
         if self.stuck:
