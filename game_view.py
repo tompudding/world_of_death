@@ -362,7 +362,7 @@ class GameView(ui.RootElement):
         self.game_over = False
         self.mouse_world = Point(0,0)
         self.mouse_pos = Point(0,0)
-        #pygame.mixer.music.load('music.ogg')
+        pygame.mixer.music.load(os.path.join(globals.dirs.sounds,'sw_normal.ogg'))
         self.music_playing = False
         super(GameView,self).__init__(Point(0,0),globals.screen)
         #skip titles for development of the main game
@@ -450,7 +450,6 @@ class GameView(ui.RootElement):
         self.help_text.SetText(' ')
 
     def StartMusic(self):
-        return
         #globals.sounds.stop_talking()
         #globals.sounds.talking_intro.play()
         pygame.mixer.music.play(-1)
@@ -539,6 +538,9 @@ class GameView(ui.RootElement):
         for c in self.water_critters:
             c.kill()
         self.water_critters = []
+        self.music_playing = False
+        pygame.mixer.music.set_volume(0)
+        globals.sounds.sw_bad_one.play()
 
         self.tutorial_text.SetText('It\'s ... a .. Smmmaaaaallll')
         self.text_end = globals.time + 2000
@@ -572,6 +574,7 @@ class GameView(ui.RootElement):
         for i in xrange(10):
             self.critters.append(actors.RockCritter(Point(x_0+i*16,140)))
         x_0 += 8*16
+        globals.sounds.sw_bad_two.play()
 
         for i in xrange(10):
             self.critters.append(actors.RockCritter(Point(x_0+500+i*16,140)))
@@ -604,6 +607,7 @@ class GameView(ui.RootElement):
         self.tutorial_text.SetText("It's a small world after all, It's a small world after all...")
         self.text_end = globals.time + 2000
         self.boat.move_direction = Point(0.3,0)
+        globals.sounds.sw_bad_three.play()
         for light in globals.lights:
             light.on = False
             self.timeofday.Set(0.0)
@@ -632,6 +636,7 @@ class GameView(ui.RootElement):
         self.tutorial_text.SetText("Glllrrrg")
         self.text_end = globals.time + 2000
         self.boat.move_direction = Point(0.3,0)
+        globals.sounds.sw_bad_four.play()
         for light in globals.lights:
             light.on = False
             self.timeofday.Set(0.0)
@@ -661,6 +666,7 @@ class GameView(ui.RootElement):
         for i in xrange(10):
             self.critters.append(actors.RockCritter(Point(x_0+i*16,140)))
         x_0 += 8*16
+        globals.sounds.sw_bad_five.play()
 
         for i in xrange(10):
             self.critters.append(actors.RockCritter(Point(x_0+500+i*16,140)))
