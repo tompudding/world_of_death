@@ -11,6 +11,7 @@ import constants
 import quads
 import opengl
 import sprite
+import utils
 
 from globals.types import Point
 
@@ -20,7 +21,7 @@ global_scale = 0.25
 class TextureImage(object):
     """ Load a file into a gltexture and store that texture for later use """
     def __init__(self,filename):
-        filename = os.path.join(globals.dirs.resource,filename)
+        filename = utils.fix_path(os.path.join(globals.dirs.resource,filename))
         if filename not in cache:
             with open(filename,'rb') as f:
                 self.textureSurface = pygame.image.load(f)
@@ -132,7 +133,7 @@ class TextureAtlas(object):
 
         self.texture = Texture(image_filename,*extra_names)
         self.subimages = {}
-        data_filename = os.path.join(globals.dirs.resource,data_filename)
+        data_filename = utils.fix_path(os.path.join(globals.dirs.resource,data_filename))
         with open(data_filename,'rb') as f:
             for line in f:
                 subimage_name,\

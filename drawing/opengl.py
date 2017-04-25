@@ -11,6 +11,7 @@ import globals
 import time
 import constants
 import itertools
+import utils
 
 numpymodule.NumpyHandler.ERROR_ON_COPY = True
 
@@ -135,7 +136,7 @@ class ShaderData(object):
         state.Update()
 
     def Load(self,name,uniforms,attributes):
-        vertex_name,fragment_name = (os.path.join('drawing','shaders','%s_%s.glsl' % (name,typeof)) for typeof in ('vertex','fragment'))
+        vertex_name,fragment_name = (utils.fix_path(os.path.join('drawing','shaders','%s_%s.glsl' % (name,typeof))) for typeof in ('vertex','fragment'))
         codes = []
         for name in vertex_name,fragment_name:
             with open(name,'rb') as f:

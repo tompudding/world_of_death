@@ -713,6 +713,7 @@ class Critter(Actor):
                 self.done_snacking = globals.time + self.snacking_time
                 self.start_snacking = globals.time
                 self.player_offset = self.pos - other.pos
+                globals.sounds.chomp.play()
                 other.add_snacking(self)
             return
 

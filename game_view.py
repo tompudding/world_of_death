@@ -6,6 +6,7 @@ from globals.types import Point
 import modes
 import random
 import actors
+import utils
 
 class ViewPos(object):
     shake_radius = 10
@@ -369,7 +370,7 @@ class GameView(ui.RootElement):
         self.game_over = False
         self.mouse_world = Point(0,0)
         self.mouse_pos = Point(0,0)
-        pygame.mixer.music.load(os.path.join(globals.dirs.sounds,'sw_normal.ogg'))
+        pygame.mixer.music.load(utils.fix_path(os.path.join(globals.dirs.sounds,'sw_normal.ogg')))
         self.music_playing = False
         super(GameView,self).__init__(Point(0,0),globals.screen)
         #skip titles for development of the main game
@@ -748,6 +749,7 @@ class GameView(ui.RootElement):
                 print 'restart all'
                 self.reset()
                 self.level_one()
+                self.player.health = self.player.initial_health
             else:
                 return
             self.game_over_frame.Disable()
