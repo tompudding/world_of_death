@@ -98,7 +98,7 @@ class Actor(object):
         self.AdjustHealth(-amount)
 
     def remove_from_map(self):
-        if self.pos != None:
+        if self.pos is not None:
             globals.aabb.remove(self)
 
     def add_to_map(self):
@@ -138,7 +138,7 @@ class Actor(object):
 
     def Move(self,t):
 
-        if self.last_update == None:
+        if self.last_update is None:
             self.last_update = globals.time
             return 0
         elapsed = (globals.time - self.last_update)*globals.time_step
@@ -646,7 +646,7 @@ class Boat(SquareActor):
 
     def Move(self,t):
 
-        if self.last_update == None:
+        if self.last_update is None:
             self.last_update = globals.time
             return 0
         elapsed = (globals.time - self.last_update)*globals.time_step
